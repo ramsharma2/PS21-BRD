@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  status      String   @default("draft") // draft | ingesting | processing | ready | error
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sources     Source[]
+  chunks      Chunk[]
+  extractions Extraction[]
+  brd         BRD?
+  conflicts   Conflict[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Source {
+  id          String   @id @default(cuid())
+  projectId   String
+  sourceType  String   // email | slack | transcript | document | manual
+  sourceId    String?  // External ID (email message ID, Slack message ID, etc.)
+  rawContent  String
+  metadata    String   // JSON string: { author, date, subject, channel, fileName, etc. }
+  ingestedAt  DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chunks      Chunk[]
+
+  @@index([projectId])
+  @@index([sourceType])
+}
+
+model Chunk {
+  id             String   @id @default(cuid())
+  projectId      String
+  sourceId       String
+  content        String
+  embedding      String?  // Vector embedding stored as JSON string for SQLite
+  isRelevant     Boolean  @default(false)
+  relevanceScore Float?   // 0-1 confidence score
+  chunkIndex     Int      // Position in the source document
+
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  source         Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([sourceId])
+  @@index([isRelevant])
+}
+
+model Extraction {
+  id          String   @id @default(cuid())
+  projectId   String
+  category    String   // functional_req | nonfunctional_req | objective | stakeholder | decision | assumption | timeline | risk
+  content     String
+  priority    String?  // must_have | should_have | could_have | wont_have (MoSCoW)
+  citations   String   // JSON string: Array of { sourceId, chunkId, snippet, confidence }
+  metadata    String?  // JSON string: Additional category-specific data
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([category])
+}
+
+model BRD {
+  id                       String   @id @default(cuid())
+  projectId                String   @unique
+  version                  Int      @default(1)
+  executiveSummary         String
+  businessObjectives       String
+  stakeholderAnalysis      String
+  scope                    String
+  functionalRequirements   String
+  nonFunctionalRequirements String
+  assumptions              String
+  constraints              String
+  risks                    String
+  successMetrics           String
+  timeline                 String
+  glossary                 String
+  rtm                      String?  // JSON string: Requirements Traceability Matrix
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  project                  Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions                 BRDVersion[]
+
+  @@index([projectId])
+}
+
+model BRDVersion {
+  id        String   @id @default(cuid())
+  brdId     String
+  version   Int
+  snapshot  String   // JSON string: Full BRD snapshot at this version
+  editNote  String?  // Description of what changed
+  createdAt DateTime @default(now())
+
+  brd       BRD      @relation(fields: [brdId], references: [id], onDelete: Cascade)
+
+  @@index([brdId])
+  @@index([version])
+}
+
+model Conflict {
+  id           String   @id @default(cuid())
+  projectId    String
+  itemA        String
+  itemB        String
+  sourceA      String   // Source ID for item A
+  sourceB      String   // Source ID for item B
+  description  String
+  resolution   String?
+  status       String   @default("open") // open | resolved
+  createdAt    DateTime @default(now())
+  resolvedAt   DateTime?
+
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+}
