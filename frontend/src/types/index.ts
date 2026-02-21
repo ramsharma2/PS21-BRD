@@ -156,10 +156,17 @@ export interface Requirement {
 }
 
 export interface NonFunctionalRequirements {
-    performance: string[];
-    security: string[];
-    scalability: string[];
-    reliability: string[];
+    performance: (string | NFRItem)[];
+    security: (string | NFRItem)[];
+    scalability: (string | NFRItem)[];
+    reliability: (string | NFRItem)[];
+}
+
+export interface NFRItem {
+    id: string;
+    description: string;
+    priority: string;
+    citations?: number[];
 }
 
 export interface Assumptions {

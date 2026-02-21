@@ -8,7 +8,7 @@ export default function Layout() {
     const isSidebarOpen = useProjectStore((state) => state.isSidebarOpen);
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background">
+        <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             {/* Sidebar */}
             <Sidebar />
 

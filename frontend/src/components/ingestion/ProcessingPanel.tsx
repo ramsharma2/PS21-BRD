@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/services/api';
@@ -6,7 +6,7 @@ import type { ProjectStats } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Play, CheckCircle2, AlertCircle, Loader2, FileText } from 'lucide-react';
+import { Play, CheckCircle2, AlertCircle, Loader2, FileText, Check } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -71,8 +71,35 @@ export default function ProcessingPanel({
     const [showTemplateDialog, setShowTemplateDialog] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<string>('standard');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [loadingStep, setLoadingStep] = useState(0);
     const navigate = useNavigate();
     const { toast } = useToast();
+
+    const processingSteps = [
+        { label: 'Ingestion & Preprocessing', description: 'Chunking documents into manageable pieces', icon: '📦' },
+        { label: 'Noise Filtering', description: 'Identifying relevant vs irrelevant content', icon: '🔍' },
+        { label: 'Requirement Extraction', description: 'Extracting functional & non-functional requirements', icon: '🧠' },
+        { label: 'Timeline Analysis', description: 'Identifying milestones & deadlines', icon: '📅' },
+        { label: 'Conflict Detection', description: 'Checking for contradictions & inconsistencies', icon: '⚠️' },
+    ];
+
+    // Simulate loading steps
+    useEffect(() => {
+        if (isProcessing) {
+            setLoadingStep(0);
+            const interval = setInterval(() => {
+                setLoadingStep((prev) => {
+                    if (prev < processingSteps.length - 1) {
+                        return prev + 1;
+                    }
+                    return prev;
+                });
+            }, 1000);
+            return () => clearInterval(interval);
+        } else {
+            setLoadingStep(0);
+        }
+    }, [isProcessing]);
 
     const processMutation = useMutation({
         mutationFn: () => api.processProject(projectId),
@@ -82,11 +109,15 @@ export default function ProcessingPanel({
         },
         onSuccess: (data) => {
             setStats(data);
-            setIsProcessing(false);
-            // Automatically show template dialog after processing completes
+            // Keep processing state active to show all loading steps
+            // Wait for all steps to complete (5 steps * 1000ms = 5000ms)
             setTimeout(() => {
-                setShowTemplateDialog(true);
-            }, 500);
+                setIsProcessing(false);
+                // Show template dialog after loading animation completes
+                setTimeout(() => {
+                    setShowTemplateDialog(true);
+                }, 300);
+            }, 5000);
         },
         onError: () => {
             setIsProcessing(false);
@@ -197,14 +228,66 @@ export default function ProcessingPanel({
 
                 {/* Processing status */}
                 {isProcessing && (
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm">
-                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                            <span className="font-medium">Processing {sourceCount} sources...</span>
-                        </div>
-                        <Progress value={50} className="h-2" />
-                        <div className="text-xs text-muted-foreground">
-                            This may take a few minutes depending on the amount of data
+                    <div className="bg-slate-950 border border-slate-800 rounded-lg p-6">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="flex items-center justify-center mb-6">
+                                <div className="relative">
+                                    <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <Loader2 className="h-6 w-6 text-blue-500" />
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 className="text-lg font-medium text-center mb-2 text-white">
+                                Processing {sourceCount} {sourceCount === 1 ? 'source' : 'sources'}...
+                            </h3>
+                            <p className="text-sm text-slate-400 text-center mb-6">
+                                AI is analyzing your documents and extracting requirements
+                            </p>
+                            <div className="space-y-2">
+                                {processingSteps.map((step, index) => {
+                                    const isActive = index === loadingStep;
+                                    const isComplete = index < loadingStep;
+                                    return (
+                                        <div
+                                            key={step.label}
+                                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                                                isActive
+                                                    ? 'bg-blue-500/10 border-blue-500/50'
+                                                    : isComplete
+                                                    ? 'bg-green-500/10 border-green-500/50'
+                                                    : 'bg-slate-900/50 border-slate-800'
+                                            }`}
+                                        >
+                                            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-900 border border-slate-700">
+                                                {isComplete ? (
+                                                    <Check className="h-4 w-4 text-green-500" />
+                                                ) : (
+                                                    <span className="text-lg">{step.icon}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between mb-0.5">
+                                                    <h4 className={`text-sm font-medium ${
+                                                        isActive ? 'text-blue-400' : isComplete ? 'text-green-400' : 'text-slate-400'
+                                                    }`}>
+                                                        {step.label}
+                                                    </h4>
+                                                    {isActive && (
+                                                        <span className="text-xs text-blue-400 font-mono">
+                                                            {Math.floor(((index + 1) / processingSteps.length) * 100)}%
+                                                        </span>
+                                                    )}
+                                                    {isComplete && (
+                                                        <Check className="h-3.5 w-3.5 text-green-500" />
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-slate-500">{step.description}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 )}

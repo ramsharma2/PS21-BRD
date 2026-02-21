@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { BRD } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,12 +13,132 @@ import {
     Calendar,
     BookOpen,
 } from 'lucide-react';
+import CitationBadge from './CitationBadge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { api } from '@/services/api';
 
 interface BRDSectionsProps {
     brd: BRD;
 }
 
+interface CitationDetail {
+    sourceId: string;
+    chunkId: string;
+    snippet: string;
+    confidence: number;
+    sourceMetadata?: any;
+}
+
 export default function BRDSections({ brd }: BRDSectionsProps) {
+    const [selectedCitation, setSelectedCitation] = useState<any>(null);
+    const [citationDialogOpen, setCitationDialogOpen] = useState(false);
+    const [loadingCitation, setLoadingCitation] = useState(false);
+    const [allExtractions, setAllExtractions] = useState<any[]>([]);
+    const [citationMap, setCitationMap] = useState<Map<string, number>>(new Map());
+
+    // Helper to safely render any value
+    const renderValue = (value: any): string => {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string') return value;
+        if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+        if (typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+    };
+
+    // Load all extractions on mount and build citation map
+    useEffect(() => {
+        const loadExtractions = async () => {
+            try {
+                const data = await api.getExtractions(brd.projectId);
+                setAllExtractions(data || []);
+                
+                // Build a map of extraction ID to citation number
+                const map = new Map<string, number>();
+                const allCitationIds = new Set<string>();
+                
+                // Collect all citation IDs from the BRD
+                const collectCitations = (obj: any) => {
+                    if (!obj) return;
+                    if (Array.isArray(obj)) {
+                        obj.forEach(collectCitations);
+                    } else if (typeof obj === 'object') {
+                        if (obj.citations && Array.isArray(obj.citations)) {
+                            obj.citations.forEach((id: string) => allCitationIds.add(id));
+                        }
+                        Object.values(obj).forEach(collectCitations);
+                    }
+                };
+                
+                collectCitations(brd);
+                
+                // Assign sequential numbers to citation IDs
+                let citationNumber = 1;
+                allCitationIds.forEach(id => {
+                    map.set(id, citationNumber++);
+                });
+                
+                setCitationMap(map);
+            } catch (error) {
+                console.error('Error loading extractions:', error);
+            }
+        };
+        
+        loadExtractions();
+    }, [brd.projectId, brd]);
+
+    // Handle citation click - show extraction details
+    const handleCitationClick = async (citationId: string) => {
+        setLoadingCitation(true);
+        setCitationDialogOpen(true);
+        
+        try {
+            // Find the extraction by ID
+            const extraction = allExtractions.find(ext => ext.id === citationId);
+            
+            if (extraction) {
+                // Parse citations if they exist
+                let citations = [];
+                try {
+                    citations = typeof extraction.citations === 'string' 
+                        ? JSON.parse(extraction.citations) 
+                        : extraction.citations || [];
+                } catch (e) {
+                    console.error('Error parsing citations:', e);
+                }
+
+                // Get the first citation's source info
+                const firstCitation = citations[0];
+                let sourceInfo = null;
+                
+                if (firstCitation && firstCitation.sourceId) {
+                    try {
+                        sourceInfo = await api.getSource(firstCitation.sourceId);
+                    } catch (error) {
+                        console.error('Error fetching source:', error);
+                    }
+                }
+
+                setSelectedCitation({
+                    id: citationId,
+                    content: extraction.content,
+                    category: extraction.category,
+                    priority: extraction.priority,
+                    sourceInfo: sourceInfo,
+                    snippet: firstCitation?.snippet || extraction.content,
+                    confidence: firstCitation?.confidence || 1.0,
+                });
+            } else {
+                console.error('Extraction not found for citation ID:', citationId);
+                setSelectedCitation(null);
+            }
+        } catch (error) {
+            console.error('Error fetching citation details:', error);
+            setSelectedCitation(null);
+        } finally {
+            setLoadingCitation(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Executive Summary */}
@@ -32,13 +153,13 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                     {brd.executiveSummary.overview && (
                         <div>
                             <h4 className="font-medium mb-2">Overview</h4>
-                            <p className="text-muted-foreground">{brd.executiveSummary.overview}</p>
+                            <p className="text-muted-foreground">{renderValue(brd.executiveSummary.overview)}</p>
                         </div>
                     )}
                     {brd.executiveSummary.scope && (
                         <div>
                             <h4 className="font-medium mb-2">Scope</h4>
-                            <p className="text-muted-foreground">{brd.executiveSummary.scope}</p>
+                            <p className="text-muted-foreground">{renderValue(brd.executiveSummary.scope)}</p>
                         </div>
                     )}
                     {brd.executiveSummary.objectives?.length > 0 && (
@@ -46,7 +167,7 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                             <h4 className="font-medium mb-2">Key Objectives</h4>
                             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                                 {brd.executiveSummary.objectives.map((obj, i) => (
-                                    <li key={i}>{obj}</li>
+                                    <li key={i}>{renderValue(obj)}</li>
                                 ))}
                             </ul>
                         </div>
@@ -68,7 +189,7 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                             <h4 className="font-medium mb-2">Primary Objectives</h4>
                             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                                 {brd.businessObjectives.primary.map((obj, i) => (
-                                    <li key={i}>{obj}</li>
+                                    <li key={i}>{renderValue(obj)}</li>
                                 ))}
                             </ul>
                         </div>
@@ -78,7 +199,7 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                             <h4 className="font-medium mb-2">Secondary Objectives</h4>
                             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                                 {brd.businessObjectives.secondary.map((obj, i) => (
-                                    <li key={i}>{obj}</li>
+                                    <li key={i}>{renderValue(obj)}</li>
                                 ))}
                             </ul>
                         </div>
@@ -86,7 +207,7 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                     {brd.businessObjectives.strategicAlignment && (
                         <div>
                             <h4 className="font-medium mb-2">Strategic Alignment</h4>
-                            <p className="text-muted-foreground">{brd.businessObjectives.strategicAlignment}</p>
+                            <p className="text-muted-foreground">{renderValue(brd.businessObjectives.strategicAlignment)}</p>
                         </div>
                     )}
                 </CardContent>
@@ -106,16 +227,16 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                             {brd.stakeholderAnalysis.stakeholders.map((stakeholder, i) => (
                                 <div key={i} className="border-l-4 border-primary pl-4">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-medium">{stakeholder.name}</h4>
+                                        <h4 className="font-medium">{renderValue(stakeholder.name)}</h4>
                                         <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                                            {stakeholder.role}
+                                            {renderValue(stakeholder.role)}
                                         </span>
                                     </div>
                                     <div className="text-sm text-muted-foreground space-y-1">
-                                        <div>Interest Level: {stakeholder.interest}</div>
+                                        <div>Interest Level: {renderValue(stakeholder.interest)}</div>
                                         {stakeholder.concerns?.length > 0 && (
                                             <div>
-                                                Concerns: {stakeholder.concerns.join(', ')}
+                                                Concerns: {stakeholder.concerns.map(c => renderValue(c)).join(', ')}
                                             </div>
                                         )}
                                     </div>
@@ -138,19 +259,27 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
                             <h4 className="font-medium mb-2 text-green-600">In Scope</h4>
-                            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                                {brd.scope.inScope?.map((item, i) => (
-                                    <li key={i}>{item}</li>
-                                ))}
-                            </ul>
+                            {brd.scope.inScope?.length > 0 ? (
+                                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                    {brd.scope.inScope.map((item, i) => (
+                                        <li key={i}>{renderValue(item)}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">No items defined</p>
+                            )}
                         </div>
                         <div>
                             <h4 className="font-medium mb-2 text-red-600">Out of Scope</h4>
-                            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                                {brd.scope.outOfScope?.map((item, i) => (
-                                    <li key={i}>{item}</li>
-                                ))}
-                            </ul>
+                            {brd.scope.outOfScope?.length > 0 ? (
+                                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                    {brd.scope.outOfScope.map((item, i) => (
+                                        <li key={i}>{renderValue(item)}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">No items defined</p>
+                            )}
                         </div>
                     </div>
                 </CardContent>
@@ -174,7 +303,23 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                                     {brd.functionalRequirements.requirements.map((req) => (
                                         <div key={req.id} className="border rounded-lg p-4">
                                             <div className="flex items-start justify-between gap-2 mb-2">
-                                                <h4 className="font-medium">{req.id}: {req.description}</h4>
+                                                <h4 className="font-medium">
+                                                    {req.id}: {req.description}
+                                                    {req.citations?.length > 0 && (
+                                                        <span className="inline-flex gap-1 ml-2">
+                                                            {req.citations.map((citId) => {
+                                                                const citNum = citationMap.get(citId);
+                                                                return citNum ? (
+                                                                    <CitationBadge
+                                                                        key={citId}
+                                                                        citationNumber={citNum}
+                                                                        onClick={() => handleCitationClick(citId)}
+                                                                    />
+                                                                ) : null;
+                                                            })}
+                                                        </span>
+                                                    )}
+                                                </h4>
                                                 <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${getPriorityColor(req.priority)}`}>
                                                     {req.priority.replace('_', ' ')}
                                                 </span>
@@ -184,7 +329,7 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                                                     <div className="text-sm font-medium mb-1">Acceptance Criteria:</div>
                                                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                                                         {req.acceptanceCriteria.map((ac, i) => (
-                                                            <li key={i}>{ac}</li>
+                                                            <li key={i}>{typeof ac === 'string' ? ac : JSON.stringify(ac)}</li>
                                                         ))}
                                                     </ul>
                                                 </div>
@@ -204,7 +349,34 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                                         <h4 className="font-medium mb-2">Performance</h4>
                                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                                             {brd.nonFunctionalRequirements.performance.map((item, i) => (
-                                                <li key={i}>{item}</li>
+                                                <li key={i}>
+                                                    {typeof item === 'object' && item.description ? (
+                                                        <>
+                                                            <span className="font-medium">{item.id}:</span> {item.description}
+                                                            {item.priority && (
+                                                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                                                    {item.priority}
+                                                                </span>
+                                                            )}
+                                                            {item.citations?.length > 0 && (
+                                                                <span className="inline-flex gap-1 ml-2">
+                                                                    {item.citations.map((citId: string) => {
+                                                                        const citNum = citationMap.get(citId);
+                                                                        return citNum ? (
+                                                                            <CitationBadge
+                                                                                key={citId}
+                                                                                citationNumber={citNum}
+                                                                                onClick={() => handleCitationClick(citId)}
+                                                                            />
+                                                                        ) : null;
+                                                                    })}
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        renderValue(item)
+                                                    )}
+                                                </li>
                                             ))}
                                         </ul>
                                     </div>
@@ -214,7 +386,34 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                                         <h4 className="font-medium mb-2">Security</h4>
                                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                                             {brd.nonFunctionalRequirements.security.map((item, i) => (
-                                                <li key={i}>{item}</li>
+                                                <li key={i}>
+                                                    {typeof item === 'object' && item.description ? (
+                                                        <>
+                                                            <span className="font-medium">{item.id}:</span> {item.description}
+                                                            {item.priority && (
+                                                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                                                    {item.priority}
+                                                                </span>
+                                                            )}
+                                                            {item.citations?.length > 0 && (
+                                                                <span className="inline-flex gap-1 ml-2">
+                                                                    {item.citations.map((citId: string) => {
+                                                                        const citNum = citationMap.get(citId);
+                                                                        return citNum ? (
+                                                                            <CitationBadge
+                                                                                key={citId}
+                                                                                citationNumber={citNum}
+                                                                                onClick={() => handleCitationClick(citId)}
+                                                                            />
+                                                                        ) : null;
+                                                                    })}
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        renderValue(item)
+                                                    )}
+                                                </li>
                                             ))}
                                         </ul>
                                     </div>
@@ -224,7 +423,73 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                                         <h4 className="font-medium mb-2">Scalability</h4>
                                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                                             {brd.nonFunctionalRequirements.scalability.map((item, i) => (
-                                                <li key={i}>{item}</li>
+                                                <li key={i}>
+                                                    {typeof item === 'object' && item.description ? (
+                                                        <>
+                                                            <span className="font-medium">{item.id}:</span> {item.description}
+                                                            {item.priority && (
+                                                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                                                    {item.priority}
+                                                                </span>
+                                                            )}
+                                                            {item.citations?.length > 0 && (
+                                                                <span className="inline-flex gap-1 ml-2">
+                                                                    {item.citations.map((citId: string) => {
+                                                                        const citNum = citationMap.get(citId);
+                                                                        return citNum ? (
+                                                                            <CitationBadge
+                                                                                key={citId}
+                                                                                citationNumber={citNum}
+                                                                                onClick={() => handleCitationClick(citId)}
+                                                                            />
+                                                                        ) : null;
+                                                                    })}
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        renderValue(item)
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {brd.nonFunctionalRequirements?.reliability?.length > 0 && (
+                                    <div>
+                                        <h4 className="font-medium mb-2">Reliability</h4>
+                                        <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                            {brd.nonFunctionalRequirements.reliability.map((item, i) => (
+                                                <li key={i}>
+                                                    {typeof item === 'object' && item.description ? (
+                                                        <>
+                                                            <span className="font-medium">{item.id}:</span> {item.description}
+                                                            {item.priority && (
+                                                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                                                    {item.priority}
+                                                                </span>
+                                                            )}
+                                                            {item.citations?.length > 0 && (
+                                                                <span className="inline-flex gap-1 ml-2">
+                                                                    {item.citations.map((citId: string) => {
+                                                                        const citNum = citationMap.get(citId);
+                                                                        return citNum ? (
+                                                                            <CitationBadge
+                                                                                key={citId}
+                                                                                citationNumber={citNum}
+                                                                                onClick={() => handleCitationClick(citId)}
+                                                                            />
+                                                                        ) : null;
+                                                                    })}
+                                                                </span>
+                                                            )}
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        renderValue(item)
+                                                    )}
+                                                </li>
                                             ))}
                                         </ul>
                                     </div>
@@ -250,10 +515,10 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                                 <div key={i} className="flex items-start gap-3 p-3 border rounded-lg">
                                     <AlertTriangle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
                                     <div className="flex-1">
-                                        <p className="text-sm">{risk.description}</p>
+                                        <p className="text-sm">{renderValue(risk.description)}</p>
                                         <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                                            <span>Likelihood: {risk.likelihood}</span>
-                                            <span>Impact: {risk.impact}</span>
+                                            <span>Likelihood: {renderValue(risk.likelihood)}</span>
+                                            <span>Impact: {renderValue(risk.impact)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -275,7 +540,7 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                     <CardContent>
                         <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                             {brd.successMetrics.metrics.map((metric, i) => (
-                                <li key={i}>{metric}</li>
+                                <li key={i}>{renderValue(metric)}</li>
                             ))}
                         </ul>
                     </CardContent>
@@ -297,8 +562,8 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                                 <div key={i} className="flex items-center gap-3">
                                     <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
                                     <div className="flex-1">
-                                        <div className="font-medium">{milestone.phase}</div>
-                                        <div className="text-sm text-muted-foreground">{milestone.date}</div>
+                                        <div className="font-medium">{renderValue(milestone.phase)}</div>
+                                        <div className="text-sm text-muted-foreground">{renderValue(milestone.date)}</div>
                                     </div>
                                 </div>
                             ))}
@@ -306,6 +571,99 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                     </CardContent>
                 </Card>
             )}
+
+            {/* Citation Detail Dialog */}
+            <Dialog open={citationDialogOpen} onOpenChange={setCitationDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            Citation #{selectedCitation?.number || '?'}
+                        </DialogTitle>
+                    </DialogHeader>
+                    
+                    {loadingCitation ? (
+                        <div className="py-8 text-center text-muted-foreground">
+                            Loading citation details...
+                        </div>
+                    ) : selectedCitation ? (
+                        <div className="space-y-4">
+                            {/* Requirement Information */}
+                            <div className="border rounded-lg p-4 bg-muted/50">
+                                <div className="text-sm font-medium mb-2">Requirement Details</div>
+                                <div className="space-y-2 text-sm">
+                                    <div>
+                                        <span className="font-medium">Category:</span>{' '}
+                                        <span className="text-muted-foreground capitalize">
+                                            {selectedCitation.category?.replace('_', ' ')}
+                                        </span>
+                                    </div>
+                                    {selectedCitation.priority && (
+                                        <div>
+                                            <span className="font-medium">Priority:</span>{' '}
+                                            <span className="text-muted-foreground">
+                                                {selectedCitation.priority}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <span className="font-medium">Confidence:</span>{' '}
+                                        <span className="text-muted-foreground">
+                                            {(selectedCitation.confidence * 100).toFixed(0)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Extracted Content */}
+                            <div>
+                                <div className="text-sm font-medium mb-2">Extracted Requirement</div>
+                                <div className="border rounded-lg p-4 bg-background">
+                                    <p className="text-sm text-muted-foreground">
+                                        {selectedCitation.content}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Source Information */}
+                            {selectedCitation.sourceInfo && (
+                                <div className="border rounded-lg p-4 bg-muted/50">
+                                    <div className="text-sm font-medium mb-2">Source Information</div>
+                                    <div className="space-y-1 text-sm text-muted-foreground">
+                                        <div>
+                                            <span className="font-medium">Type:</span>{' '}
+                                            {selectedCitation.sourceInfo.sourceType}
+                                        </div>
+                                        {selectedCitation.sourceInfo.metadata && (() => {
+                                            try {
+                                                const metadata = typeof selectedCitation.sourceInfo.metadata === 'string'
+                                                    ? JSON.parse(selectedCitation.sourceInfo.metadata)
+                                                    : selectedCitation.sourceInfo.metadata;
+                                                return (
+                                                    <>
+                                                        {metadata.filename && <div><span className="font-medium">File:</span> {metadata.filename}</div>}
+                                                        {metadata.author && <div><span className="font-medium">Author:</span> {metadata.author}</div>}
+                                                        {metadata.date && <div><span className="font-medium">Date:</span> {new Date(metadata.date).toLocaleDateString()}</div>}
+                                                        {metadata.subject && <div><span className="font-medium">Subject:</span> {metadata.subject}</div>}
+                                                    </>
+                                                );
+                                            } catch (e) {
+                                                return null;
+                                            }
+                                        })()}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="py-8 text-center text-muted-foreground">
+                            <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                            <p>Citation details not found</p>
+                            <p className="text-xs mt-2">This requirement may not have source tracking information.</p>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

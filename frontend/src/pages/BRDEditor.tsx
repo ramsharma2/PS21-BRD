@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '@/services/api';
@@ -10,7 +10,8 @@ import BRDSections from '@/components/brd/BRDSections';
 import GenerationProgress from '@/components/brd/GenerationProgress';
 import NLEditBar from '@/components/brd/NLEditBar';
 import VersionHistory from '@/components/brd/VersionHistory';
-import { ArrowLeft, Download, Sparkles, FileText, Loader2, History } from 'lucide-react';
+import WebSearchPanel from '@/components/brd/WebSearchPanel';
+import { ArrowLeft, Download, Sparkles, FileText, Loader2, History, Share2, Copy, Check } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
     DropdownMenu,
@@ -80,6 +81,7 @@ export default function BRDEditor() {
     const { currentProject, setCurrentProject } = useProjectStore();
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationProgress, setGenerationProgress] = useState<Record<string, any>>({});
+    const [shareUrlCopied, setShareUrlCopied] = useState(false);
     const { toast } = useToast();
 
     // Fetch project
@@ -115,10 +117,12 @@ export default function BRDEditor() {
         enabled: !!brd?.id,
     });
 
-    // Update current project
-    if (project && (!currentProject || currentProject.id !== project.id)) {
-        setCurrentProject(project);
-    }
+    // Update current project when it changes
+    useEffect(() => {
+        if (project && (!currentProject || currentProject.id !== project.id)) {
+            setCurrentProject(project);
+        }
+    }, [project, currentProject, setCurrentProject]);
 
     // Generate BRD mutation
     const generateMutation = useMutation({
@@ -216,6 +220,44 @@ export default function BRDEditor() {
         }
     };
 
+    const handleShare = () => {
+        const shareUrl = `${window.location.origin}/projects/${projectId}/brd`;
+        navigator.clipboard.writeText(shareUrl);
+        setShareUrlCopied(true);
+        toast({
+            title: "Link Copied",
+            description: "BRD link copied to clipboard",
+        });
+        setTimeout(() => setShareUrlCopied(false), 2000);
+    };
+
+    const handleDownload = async (format: 'pdf' | 'docx' | 'md') => {
+        try {
+            const sections = transformBRDForExport(brd);
+            switch (format) {
+                case 'pdf':
+                    await exportToPDF(project!, sections);
+                    break;
+                case 'docx':
+                    await exportToDOCX(project!, sections);
+                    break;
+                case 'md':
+                    await exportToMarkdown(project!, sections);
+                    break;
+            }
+            toast({
+                title: "Download Started",
+                description: `BRD is being downloaded as ${format.toUpperCase()}`,
+            });
+        } catch (error) {
+            toast({
+                title: "Download Failed",
+                description: "Failed to download BRD. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
     if (!projectId) {
         return <div>Project not found</div>;
     }
@@ -240,6 +282,38 @@ export default function BRDEditor() {
 
                 {brd && (
                     <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleShare}>
+                            {shareUrlCopied ? (
+                                <>
+                                    <Check className="h-4 w-4 mr-2" />
+                                    Copied
+                                </>
+                            ) : (
+                                <>
+                                    <Share2 className="h-4 w-4 mr-2" />
+                                    Share
+                                </>
+                            )}
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline">
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleDownload('pdf')}>
+                                    Download as PDF
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDownload('docx')}>
+                                    Download as Word (DOCX)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDownload('md')}>
+                                    Download as Markdown
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <Sheet>
                             <SheetTrigger asChild>
                                 <Button variant="outline">
@@ -261,25 +335,6 @@ export default function BRDEditor() {
                                 </div>
                             </SheetContent>
                         </Sheet>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline">
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Export
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => exportToPDF(project!, transformBRDForExport(brd))}>
-                                    Export as PDF
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => exportToDOCX(project!, transformBRDForExport(brd))}>
-                                    Export as Word (DOCX)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => exportToMarkdown(project!, transformBRDForExport(brd))}>
-                                    Export as Markdown
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
                     </div>
                 )}
             </div>
@@ -375,6 +430,15 @@ export default function BRDEditor() {
                         onEdit={handleEdit}
                         isProcessing={editMutation.isPending}
                     />
+                    
+                    {/* Web Search Panel */}
+                    <WebSearchPanel 
+                        projectName={project?.name}
+                        onResultsFound={(results) => {
+                            console.log('Search results:', results);
+                        }}
+                    />
+                    
                     <BRDSections brd={brd} />
                 </>
             )}

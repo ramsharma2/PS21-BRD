@@ -48,7 +48,6 @@ export const processEditRequest = async (request: EditRequest): Promise<EditResu
         };
 
         // 2. Prepare context for AI
-        // If a specific section is targeted, we emphasize it, otherwise provided full context
         const context = JSON.stringify(currentContent, null, 2);
 
         // 3. Construct Prompt
@@ -57,54 +56,71 @@ export const processEditRequest = async (request: EditRequest): Promise<EditResu
             .replace('{{INSTRUCTION}}', request.instruction)
             .replace('{{SECTION_CONTEXT}}', request.section ? `Target Section: ${request.section}` : 'Target: Infer from instruction');
 
-        // 4. Call AI
-        const result = await model.generateContent(prompt);
-        const response = result.response;
-        const text = response.text();
+        // 4. Call AI with rate limit handling
+        try {
+            const result = await model.generateContent(prompt);
+            const response = result.response;
+            const text = response.text();
 
-        // 5. Parse AI Response (expecting JSON)
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            throw new Error('Failed to parse AI response');
-        }
-
-        const parsedResponse = JSON.parse(jsonMatch[0]);
-
-        // 6. Validate structure (basic check)
-        if (!parsedResponse.content || !parsedResponse.explanation) {
-            throw new Error('AI response missing required fields');
-        }
-
-        // 7. Create new BRD Version
-        const newVersion = await prisma.bRDVersion.create({
-            data: {
-                brdId: request.brdId,
-                snapshot: JSON.stringify(parsedResponse.content),
-                editNote: request.instruction,
-                version: (brd.version || 0) + 1,
-            },
-        });
-
-        // 8. Update main BRD record
-        const updateData: any = { version: { increment: 1 } };
-        const allowedFields = ['executiveSummary', 'businessObjectives', 'stakeholderAnalysis', 'scope', 'functionalRequirements', 'nonFunctionalRequirements', 'assumptions', 'constraints', 'risks', 'successMetrics', 'timeline', 'glossary', 'rtm'];
-        for (const field of allowedFields) {
-            if (parsedResponse.content[field] !== undefined) {
-                updateData[field] = typeof parsedResponse.content[field] === 'string' ? parsedResponse.content[field] : JSON.stringify(parsedResponse.content[field]);
+            // 5. Parse AI Response (expecting JSON)
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('Failed to parse AI response');
             }
+
+            const parsedResponse = JSON.parse(jsonMatch[0]);
+
+            // 6. Validate structure (basic check)
+            if (!parsedResponse.content || !parsedResponse.explanation) {
+                throw new Error('AI response missing required fields');
+            }
+
+            // 7. Create new BRD Version
+            const newVersion = await prisma.bRDVersion.create({
+                data: {
+                    brdId: request.brdId,
+                    snapshot: JSON.stringify(parsedResponse.content),
+                    editNote: request.instruction,
+                    version: (brd.version || 0) + 1,
+                },
+            });
+
+            // 8. Update main BRD record
+            const updateData: any = { version: { increment: 1 } };
+            const allowedFields = ['executiveSummary', 'businessObjectives', 'stakeholderAnalysis', 'scope', 'functionalRequirements', 'nonFunctionalRequirements', 'assumptions', 'constraints', 'risks', 'successMetrics', 'timeline', 'glossary', 'rtm'];
+            for (const field of allowedFields) {
+                if (parsedResponse.content[field] !== undefined) {
+                    updateData[field] = typeof parsedResponse.content[field] === 'string' ? parsedResponse.content[field] : JSON.stringify(parsedResponse.content[field]);
+                }
+            }
+
+            await prisma.bRD.update({
+                where: { id: request.brdId },
+                data: updateData,
+            });
+
+            // Parse the content back to objects for the response (matching getBRD format)
+            const parsedContent: any = {};
+            for (const field of allowedFields) {
+                if (parsedResponse.content[field] !== undefined) {
+                    const value = parsedResponse.content[field];
+                    parsedContent[field] = typeof value === 'string' ? JSON.parse(value) : value;
+                }
+            }
+
+            return {
+                success: true,
+                newContent: parsedContent,
+                explanation: parsedResponse.explanation,
+                affectedSections: parsedResponse.affected_sections || [],
+            };
+        } catch (apiError: any) {
+            // Handle rate limit errors
+            if (apiError.status === 429) {
+                throw new Error('API rate limit exceeded. Please wait a few minutes before trying again. The free tier has strict limits on requests per minute.');
+            }
+            throw apiError;
         }
-
-        await prisma.bRD.update({
-            where: { id: request.brdId },
-            data: updateData,
-        });
-
-        return {
-            success: true,
-            newContent: parsedResponse.content,
-            explanation: parsedResponse.explanation,
-            affectedSections: parsedResponse.affected_sections || [],
-        };
 
     } catch (error) {
         console.error('Error processing edit request:', error);

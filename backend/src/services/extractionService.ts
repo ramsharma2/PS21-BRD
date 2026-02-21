@@ -134,15 +134,16 @@ export class ExtractionService {
             // Parse JSON response
             const jsonMatch = response.match(/\[[\s\S]*\]/);
             if (!jsonMatch) {
-                console.warn('No JSON array found in extraction response');
-                return [];
+                console.warn('No JSON array found in extraction response, falling back to mock data');
+                return this.mockExtract(text);
             }
 
             const items: ExtractedItem[] = JSON.parse(jsonMatch[0]);
             return items;
         } catch (error) {
-            console.error('Information extraction error:', error);
-            return [];
+            console.error('Information extraction failed - using mock data');
+            console.log('[Extraction] Falling back to mock data due to API error');
+            return this.mockExtract(text);
         }
     }
 

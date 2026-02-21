@@ -113,14 +113,17 @@ export class NoiseFilterService {
         }
 
         try {
+            console.log('[NoiseFilter] Calling Gemini API for classification...');
             const model = genAI.getGenerativeModel({
-                model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
+                model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
                 systemInstruction: NOISE_FILTER_SYSTEM_PROMPT,
             });
 
             const prompt = createNoiseFilterPrompt(chunk);
             const result = await model.generateContent(prompt);
             const response = result.response.text();
+
+            console.log('[NoiseFilter] API response received');
 
             // Parse JSON response
             const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -129,15 +132,13 @@ export class NoiseFilterService {
             }
 
             const classification: NoiseFilterResult = JSON.parse(jsonMatch[0]);
+            console.log('[NoiseFilter] Classification:', classification.classification, 'Confidence:', classification.confidence);
             return classification;
         } catch (error) {
-            console.error('Noise classification error:', error);
-            // Fallback: assume relevant if classification fails
-            return {
-                classification: 'RELEVANT',
-                confidence: 0.5,
-                reasoning: 'Classification failed, defaulting to RELEVANT',
-            };
+            console.error('Noise classification error - falling back to mock classification');
+            console.error('Error details:', error);
+            // Fallback: use mock classification if API fails
+            return this.mockClassify(chunk);
         }
     }
 

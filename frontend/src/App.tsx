@@ -7,6 +7,7 @@ import Loading from './components/common/Loading';
 import { Toaster } from './components/ui/toaster';
 
 // Lazy load pages for better performance
+const Landing = lazy(() => import('./pages/Landing'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const NewProject = lazy(() => import('./pages/NewProject'));
 const DataIngestion = lazy(() => import('./pages/DataIngestion'));
@@ -15,6 +16,7 @@ const BRDEditor = lazy(() => import('./pages/BRDEditor'));
 const Conflicts = lazy(() => import('./pages/Conflicts'));
 const Traceability = lazy(() => import('./pages/Traceability'));
 const Analytics = lazy(() => import('./pages/Analytics'));
+const ChunkRanking = lazy(() => import('./pages/ChunkRanking'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Login = lazy(() => import('./pages/Login'));
 
@@ -24,6 +26,9 @@ function App() {
             <BrowserRouter>
                 <Suspense fallback={<Loading />}>
                     <Routes>
+                        {/* Landing page */}
+                        <Route path="/" element={<Landing />} />
+                        
                         {/* Auth routes */}
                         <Route path="/login" element={<Login />} />
                         <Route path="/sign-in/*" element={<Navigate to="/login" replace />} />
@@ -31,7 +36,7 @@ function App() {
 
                         {/* Protected routes */}
                         <Route element={<ProtectedRoute />}>
-                            <Route path="/" element={<Dashboard />} />
+                            <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/projects/new" element={<NewProject />} />
                             <Route path="/projects/:projectId/ingest" element={<DataIngestion />} />
                             <Route path="/projects/:projectId/dataset-import" element={<DatasetImport />} />
@@ -39,6 +44,7 @@ function App() {
                             <Route path="/projects/:projectId/conflicts" element={<Conflicts />} />
                             <Route path="/projects/:projectId/traceability" element={<Traceability />} />
                             <Route path="/projects/:projectId/analytics" element={<Analytics />} />
+                            <Route path="/projects/:projectId/ranking" element={<ChunkRanking />} />
                             <Route path="/settings" element={<Settings />} />
                         </Route>
 

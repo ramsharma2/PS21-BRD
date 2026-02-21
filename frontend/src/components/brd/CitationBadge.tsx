@@ -5,16 +5,20 @@ interface CitationBadgeProps {
     citationNumber: number;
     sourceLabel?: string;
     excerpt?: string;
+    onClick?: () => void;
 }
 
-export default function CitationBadge({ citationNumber, sourceLabel, excerpt }: CitationBadgeProps) {
+export default function CitationBadge({ citationNumber, sourceLabel, excerpt, onClick }: CitationBadgeProps) {
     return (
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <sup className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary/20 text-primary text-xs font-medium cursor-help ml-1 hover:bg-primary/30 transition-colors">
+                    <button
+                        onClick={onClick}
+                        className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-medium cursor-pointer ml-1 hover:bg-blue-500/30 transition-colors border border-blue-500/30"
+                    >
                         {citationNumber}
-                    </sup>
+                    </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-sm">
                     <div className="space-y-2">
@@ -28,6 +32,7 @@ export default function CitationBadge({ citationNumber, sourceLabel, excerpt }: 
                                 {excerpt.length > 100 ? '...' : ''}&quot;
                             </p>
                         )}
+                        <p className="text-xs text-blue-400">Click to view full source</p>
                     </div>
                 </TooltipContent>
             </Tooltip>

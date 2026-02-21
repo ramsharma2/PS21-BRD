@@ -11,11 +11,12 @@ import {
     ChevronRight,
     AlertTriangle,
     Link as LinkIcon,
+    TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'New Project', href: '/projects/new', icon: FolderPlus },
     { name: 'Settings', href: '/settings', icon: Settings },
 ];
@@ -38,6 +39,11 @@ export default function Sidebar() {
                 icon: FileText,
             },
             {
+                name: 'Chunk Ranking',
+                href: `/projects/${currentProject.id}/ranking`,
+                icon: TrendingUp,
+            },
+            {
                 name: 'Conflict Detection',
                 href: `/projects/${currentProject.id}/conflicts`,
                 icon: AlertTriangle,
@@ -58,21 +64,21 @@ export default function Sidebar() {
     return (
         <aside
             className={cn(
-                'fixed left-0 top-0 z-40 h-screen border-r bg-card transition-all duration-300',
+                'fixed left-0 top-0 z-40 h-screen border-r bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl transition-all duration-300 shadow-lg',
                 isSidebarOpen ? 'w-64' : 'w-16'
             )}
         >
             {/* Logo and toggle */}
-            <div className="flex h-16 items-center justify-between border-b px-4">
+            <div className="flex h-16 items-center justify-between border-b px-4 bg-white/50 dark:bg-slate-900/50">
                 {isSidebarOpen && (
-                    <Link to="/" className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-bold shadow-md">
+                    <Link to="/dashboard" className="flex items-center gap-2 group">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-bold shadow-md transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-300">
                             B
                         </div>
                         <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">BRDify</span>
                     </Link>
                 )}
-                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="ml-auto">
+                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="ml-auto hover:bg-blue-100 dark:hover:bg-blue-900 transform hover:scale-110 transition-all duration-300">
                     {isSidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </Button>
             </div>
@@ -87,14 +93,14 @@ export default function Sidebar() {
                             key={item.name}
                             to={item.href}
                             className={cn(
-                                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 transform hover:scale-105',
                                 isActive
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                                    : 'text-muted-foreground hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-600 dark:hover:text-blue-400'
                             )}
                             title={!isSidebarOpen ? item.name : undefined}
                         >
-                            <item.icon className="h-5 w-5 flex-shrink-0" />
+                            <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'animate-pulse-slow')} />
                             {isSidebarOpen && <span>{item.name}</span>}
                         </Link>
                     );
@@ -115,14 +121,14 @@ export default function Sidebar() {
                                     key={item.name}
                                     to={item.href}
                                     className={cn(
-                                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-300 transform hover:scale-105',
                                         isActive
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                                            : 'text-muted-foreground hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-600 dark:hover:text-blue-400'
                                     )}
                                     title={!isSidebarOpen ? item.name : undefined}
                                 >
-                                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                                    <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'animate-pulse-slow')} />
                                     {isSidebarOpen && <span>{item.name}</span>}
                                 </Link>
                             );
@@ -133,10 +139,10 @@ export default function Sidebar() {
 
             {/* Current project info */}
             {isSidebarOpen && currentProject && (
-                <div className="border-t p-4">
+                <div className="border-t p-4 bg-white/50 dark:bg-slate-900/50">
                     <div className="text-xs font-medium text-muted-foreground mb-1">Active Project</div>
                     <div className="text-sm font-semibold truncate">{currentProject.name}</div>
-                    <div className={cn('text-xs mt-1 px-2 py-0.5 rounded-full inline-block', getStatusColor(currentProject.status))}>
+                    <div className={cn('text-xs mt-1 px-2 py-0.5 rounded-full inline-block transform hover:scale-110 transition-transform duration-300', getStatusColor(currentProject.status))}>
                         {currentProject.status}
                     </div>
                 </div>

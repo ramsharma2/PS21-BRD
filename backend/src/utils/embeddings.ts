@@ -12,11 +12,10 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
     try {
-        // Use Gemini's embedding model with explicit v1 API version
-        // text-embedding-004 is available on v1, not v1beta
+        // Use Gemini's embedding model
+        // gemini-embedding-001 works with default API version
         const model = genAI.getGenerativeModel(
-            { model: process.env.GOOGLE_EMBEDDING_MODEL || 'text-embedding-004' },
-            { apiVersion: 'v1' }
+            { model: process.env.GOOGLE_EMBEDDING_MODEL || 'gemini-embedding-001' }
         );
 
         const result = await model.embedContent(text);
@@ -24,7 +23,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
         return embedding.values;
     } catch (error) {
-        console.error('Embedding generation error:', error);
+        console.error('Embedding generation failed - using mock embedding');
 
         // Fallback to mock embedding if API fails (to keep the app running)
         console.log('Falling back to mock embedding due to API error');
@@ -128,7 +127,7 @@ export function generateMockEmbedding(text: string): number[] {
         return ((acc << 5) - acc) + char.charCodeAt(0);
     }, 0);
 
-    const dimension = 768; // Standard embedding dimension
+    const dimension = 3072; // gemini-embedding-001 dimension
     const vector: number[] = [];
 
     for (let i = 0; i < dimension; i++) {

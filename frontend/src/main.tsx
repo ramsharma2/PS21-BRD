@@ -37,9 +37,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                 </AuthProvider>
             </GoogleOAuthProvider>
         ) : (
-            <QueryClientProvider client={queryClient}>
-                <App />
-            </QueryClientProvider>
+            <AuthProvider>
+                <QueryClientProvider client={queryClient}>
+                    <App />
+                </QueryClientProvider>
+            </AuthProvider>
         )}
     </React.StrictMode>
 );
