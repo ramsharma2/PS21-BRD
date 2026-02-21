@@ -216,7 +216,11 @@ class ApiClient {
 
     async applyEdit(request: EditRequest): Promise<EditResult> {
         const response = await this.client.post<ApiResponse<EditResult>>('/edit/apply', request);
-        if (!response.data.data) throw new Error('Failed to apply edit');
+        console.log('[API Client] Edit response:', response.data);
+        if (!response.data.data) {
+            console.error('[API Client] Missing data in response:', response.data);
+            throw new Error('Failed to apply edit');
+        }
         return response.data.data;
     }
 
@@ -260,6 +264,68 @@ class ApiClient {
     async getAnalytics(projectId: string): Promise<SentimentAnalysisResult> {
         const response = await this.client.get<ApiResponse<SentimentAnalysisResult>>(`/analytics/${projectId}`);
         return response.data.data!;
+    }
+
+    // ============================================
+    // CHUNK RANKING
+    // ============================================
+
+    async getRankingStats(projectId: string): Promise<any> {
+        const response = await this.client.get<ApiResponse<any>>(`/ranking/${projectId}/stats`);
+        return response.data.data;
+    }
+
+    async reRankChunks(projectId: string, config: any): Promise<any> {
+        const response = await this.client.post<ApiResponse<any>>(`/ranking/${projectId}/rerank`, config);
+        return response.data.data;
+    }
+
+    async batchReRankChunks(projectId: string, topN: number): Promise<any> {
+        const response = await this.client.post<ApiResponse<any>>(`/ranking/${projectId}/batch-rerank`, { topN });
+        return response.data.data;
+    }
+
+    async getRankedChunksByCategory(projectId: string, category: string, topN: number): Promise<any> {
+        const response = await this.client.post<ApiResponse<any>>(`/ranking/${projectId}/category/${category}`, { topN });
+        return response.data.data;
+    }
+
+    // ============================================
+    // EXTRACTIONS & SOURCES
+    // ============================================
+
+    async getExtractions(projectId: string): Promise<any[]> {
+        const response = await this.client.get(`/extractions/${projectId}`);
+        return response.data || [];
+    }
+
+    async getSource(sourceId: string): Promise<any> {
+        const response = await this.client.get(`/sources/${sourceId}`);
+        return response.data;
+    }
+
+    // ============================================
+    // WEB SEARCH
+    // ============================================
+
+    async webSearch(query: string, maxResults: number = 5): Promise<any> {
+        const response = await this.client.post('/search/web', { query, maxResults });
+        return response.data;
+    }
+
+    async searchBestPractices(domain: string): Promise<any> {
+        const response = await this.client.post('/search/best-practices', { domain });
+        return response.data;
+    }
+
+    async searchTechnicalSpecs(technology: string): Promise<any> {
+        const response = await this.client.post('/search/technical-specs', { technology });
+        return response.data;
+    }
+
+    async searchCompliance(industry: string): Promise<any> {
+        const response = await this.client.post('/search/compliance', { industry });
+        return response.data;
     }
 
     // ============================================

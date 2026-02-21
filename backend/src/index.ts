@@ -18,6 +18,10 @@ import conflictsRouter from './routes/conflicts';
 import rtmRouter from './routes/rtm';
 import analyticsRouter from './routes/analytics';
 import notificationsRouter from './routes/notifications';
+import rankingRouter from './routes/ranking';
+import extractionsRouter from './routes/extractions';
+import sourcesRouter from './routes/sources';
+import searchRouter from './routes/search';
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -77,6 +81,10 @@ app.use('/api/conflicts', conflictsRouter);
 app.use('/api/rtm', rtmRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/ranking', rankingRouter);
+app.use('/api/extractions', extractionsRouter);
+app.use('/api/sources', sourcesRouter);
+app.use('/api/search', searchRouter);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
