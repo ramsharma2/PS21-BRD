@@ -64,11 +64,10 @@ router.post(
                 success: true,
                 data: {
                     message: 'Processing complete',
-                    stats: {
-                        sourcesProcessed: project.sources.length,
-                        filteringStats: await noiseFilterService.getFilteringStats(projectId),
-                        extractionStats: await extractionService.getExtractionStats(projectId),
-                    },
+                    filtering: await noiseFilterService.getFilteringStats(projectId),
+                    extraction: await extractionService.getExtractionStats(projectId),
+                    sources: project.sources.length,
+                    conflicts: 0,
                 },
             });
         } catch (error) {

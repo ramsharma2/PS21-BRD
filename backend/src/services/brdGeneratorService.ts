@@ -453,20 +453,23 @@ Respond with JSON:
      * Save BRD to database
      */
     private async saveBRD(projectId: string, sections: BRDSection) {
+        // Provide defaults for any missing sections
+        const defaultSection = { content: 'Not included in this template' };
+        
         // Convert all sections to JSON strings for SQLite
         const stringifiedSections = {
-            executiveSummary: JSON.stringify(sections.executiveSummary),
-            businessObjectives: JSON.stringify(sections.businessObjectives),
-            stakeholderAnalysis: JSON.stringify(sections.stakeholderAnalysis),
-            scope: JSON.stringify(sections.scope),
-            functionalRequirements: JSON.stringify(sections.functionalRequirements),
-            nonFunctionalRequirements: JSON.stringify(sections.nonFunctionalRequirements),
-            assumptions: JSON.stringify(sections.assumptions),
-            constraints: JSON.stringify(sections.constraints),
-            risks: JSON.stringify(sections.risks),
-            successMetrics: JSON.stringify(sections.successMetrics),
-            timeline: JSON.stringify(sections.timeline),
-            glossary: JSON.stringify(sections.glossary),
+            executiveSummary: JSON.stringify(sections.executiveSummary || defaultSection),
+            businessObjectives: JSON.stringify(sections.businessObjectives || defaultSection),
+            stakeholderAnalysis: JSON.stringify(sections.stakeholderAnalysis || defaultSection),
+            scope: JSON.stringify(sections.scope || defaultSection),
+            functionalRequirements: JSON.stringify(sections.functionalRequirements || defaultSection),
+            nonFunctionalRequirements: JSON.stringify(sections.nonFunctionalRequirements || defaultSection),
+            assumptions: JSON.stringify(sections.assumptions || defaultSection),
+            constraints: JSON.stringify(sections.constraints || defaultSection),
+            risks: JSON.stringify(sections.risks || defaultSection),
+            successMetrics: JSON.stringify(sections.successMetrics || defaultSection),
+            timeline: JSON.stringify(sections.timeline || defaultSection),
+            glossary: JSON.stringify(sections.glossary || defaultSection),
         };
 
         // Check if BRD already exists

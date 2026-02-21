@@ -83,7 +83,10 @@ export default function ProcessingPanel({
         onSuccess: (data) => {
             setStats(data);
             setIsProcessing(false);
-            onProcessingComplete?.();
+            // Automatically show template dialog after processing completes
+            setTimeout(() => {
+                setShowTemplateDialog(true);
+            }, 500);
         },
         onError: () => {
             setIsProcessing(false);
