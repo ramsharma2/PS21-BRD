@@ -66,10 +66,10 @@ export default function Sidebar() {
             <div className="flex h-16 items-center justify-between border-b px-4">
                 {isSidebarOpen && (
                     <Link to="/" className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-bold shadow-md">
                             B
                         </div>
-                        <span className="text-lg font-semibold">BRD Generator</span>
+                        <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">BRDify</span>
                     </Link>
                 )}
                 <Button variant="ghost" size="icon" onClick={toggleSidebar} className="ml-auto">

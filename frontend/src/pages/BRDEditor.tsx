@@ -90,11 +90,15 @@ export default function BRDEditor() {
     });
 
     // Fetch BRD
-    const { data: brd, refetch: refetchBRD } = useQuery({
+    const { data: brd, refetch: refetchBRD, isError: brdError } = useQuery({
         queryKey: ['brd', projectId],
         queryFn: () => api.getBRD(projectId!),
         enabled: !!projectId,
-        refetchInterval: 3000, // Poll for changes (real-time collaboration simulation)
+        retry: false, // Don't retry on 404
+        refetchInterval: (data) => {
+            // Only poll if BRD exists, otherwise stop polling
+            return data ? 3000 : false;
+        },
     });
 
     // Fetch stats

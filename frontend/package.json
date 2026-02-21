@@ -1,7 +1,7 @@
 {
-    "name": "brd-frontend",
+    "name": "brdify-frontend",
     "version": "1.0.0",
-    "description": "Frontend for BRD Generator",
+    "description": "Frontend for BRDify - AI-Powered BRD Generator",
     "type": "module",
     "scripts": {
         "dev": "vite",

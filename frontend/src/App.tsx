@@ -30,17 +30,15 @@ function App() {
 
                             {/* Protected routes */}
                             <Route element={<ProtectedRoute />}>
-                                <Route element={<Layout />}>
-                                    <Route path="/" element={<Dashboard />} />
-                                    <Route path="/projects/new" element={<NewProject />} />
-                                    <Route path="/projects/:projectId/ingest" element={<DataIngestion />} />
-                                    <Route path="/projects/:projectId/dataset-import" element={<DatasetImport />} />
-                                    <Route path="/projects/:projectId/brd" element={<BRDEditor />} />
-                                    <Route path="/projects/:projectId/conflicts" element={<Conflicts />} />
-                                    <Route path="/projects/:projectId/traceability" element={<Traceability />} />
-                                    <Route path="/projects/:projectId/analytics" element={<Analytics />} />
-                                    <Route path="/settings" element={<Settings />} />
-                                </Route>
+                                <Route path="/" element={<Dashboard />} />
+                                <Route path="/projects/new" element={<NewProject />} />
+                                <Route path="/projects/:projectId/ingest" element={<DataIngestion />} />
+                                <Route path="/projects/:projectId/dataset-import" element={<DatasetImport />} />
+                                <Route path="/projects/:projectId/brd" element={<BRDEditor />} />
+                                <Route path="/projects/:projectId/conflicts" element={<Conflicts />} />
+                                <Route path="/projects/:projectId/traceability" element={<Traceability />} />
+                                <Route path="/projects/:projectId/analytics" element={<Analytics />} />
+                                <Route path="/settings" element={<Settings />} />
                             </Route>
 
                             {/* Catch all */}

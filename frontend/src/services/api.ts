@@ -133,18 +133,26 @@ class ApiClient {
         return response.data.data.stats;
     }
 
-    async generateBRD(projectId: string): Promise<string> {
+    async generateBRD(projectId: string, templateId: string = 'standard'): Promise<string> {
         const response = await this.client.post<ApiResponse<{ brdId: string }>>(
-            `/brd/generate/${projectId}`
+            `/brd/generate/${projectId}`,
+            { templateId }
         );
         if (!response.data.data) throw new Error('Failed to generate BRD');
         return response.data.data.brdId;
     }
 
-    async getBRD(projectId: string): Promise<BRD> {
-        const response = await this.client.get<ApiResponse<BRD>>(`/brd/${projectId}`);
-        if (!response.data.data) throw new Error('BRD not found');
-        return response.data.data;
+    async getBRD(projectId: string): Promise<BRD | null> {
+        try {
+            const response = await this.client.get<ApiResponse<BRD>>(`/brd/${projectId}`);
+            return response.data.data || null;
+        } catch (error: any) {
+            // Return null for 404 errors instead of throwing
+            if (error.response?.status === 404) {
+                return null;
+            }
+            throw error;
+        }
     }
 
     async getProjectStats(projectId: string): Promise<ProjectStats> {

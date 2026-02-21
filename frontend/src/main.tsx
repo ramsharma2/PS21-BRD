@@ -20,15 +20,22 @@ const queryClient = new QueryClient({
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!clerkPubKey) {
-    console.warn('Missing Clerk publishable key. Authentication will not work.');
+    console.warn('Missing Clerk publishable key. Running without authentication.');
 }
 
+// Render with or without Clerk based on key availability
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <ClerkProvider publishableKey={clerkPubKey || ''}>
+        {clerkPubKey ? (
+            <ClerkProvider publishableKey={clerkPubKey}>
+                <QueryClientProvider client={queryClient}>
+                    <App />
+                </QueryClientProvider>
+            </ClerkProvider>
+        ) : (
             <QueryClientProvider client={queryClient}>
                 <App />
             </QueryClientProvider>
-        </ClerkProvider>
+        )}
     </React.StrictMode>
 );
