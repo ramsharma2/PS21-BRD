@@ -23,7 +23,7 @@ router.post(
     requireAuth,
     aiRateLimiter,
     asyncHandler(async (req: Request, res: Response) => {
-        const { projectId } = req.params;
+        const projectId = req.params.projectId as string;
 
         // Verify project ownership
         const project = await prisma.project.findFirst({
@@ -84,15 +84,18 @@ router.post(
 
 /**
  * POST /api/brd/generate/:projectId
- * Generate BRD for a project with streaming support
+ * Generate BRD for a project with streaming support and template selection
  */
 router.post(
     '/generate/:projectId',
     requireAuth,
     aiRateLimiter,
     asyncHandler(async (req: Request, res: Response) => {
-        const { projectId } = req.params;
+        const projectId = req.params.projectId as string;
         const { stream } = req.query;
+        const { templateId = 'standard' } = req.body;
+
+        console.log(`[BRD Generation] Starting for project ${projectId} with template ${templateId}`);
 
         // Verify project ownership
         const project = await prisma.project.findFirst({
@@ -111,12 +114,20 @@ router.post(
             where: { projectId },
         });
 
+        console.log(`[BRD Generation] Found ${extractionCount} extractions for project ${projectId}`);
+
         if (extractionCount === 0) {
             throw new ApiError(
                 400,
                 'No extracted information available. Please run processing first.'
             );
         }
+
+        // Update project status to processing
+        await prisma.project.update({
+            where: { id: projectId },
+            data: { status: 'processing' },
+        });
 
         // If streaming is requested, use Server-Sent Events
         if (stream === 'true') {
@@ -131,25 +142,42 @@ router.post(
             };
 
             try {
-                const brdId = await brdGeneratorService.generateBRD(projectId, onProgress);
+                const brdId = await brdGeneratorService.generateBRD(projectId, templateId, onProgress);
 
                 // Send completion event
                 res.write(`event: complete\n`);
                 res.write(`data: ${JSON.stringify({ brdId })}\n\n`);
                 res.end();
             } catch (error) {
+                console.error('[BRD Generation] Error:', error);
+                // Update project status to error
+                await prisma.project.update({
+                    where: { id: projectId },
+                    data: { status: 'error' },
+                });
                 res.write(`event: error\n`);
                 res.write(`data: ${JSON.stringify({ error: (error as Error).message })}\n\n`);
                 res.end();
             }
         } else {
             // Non-streaming: generate and return
-            const brdId = await brdGeneratorService.generateBRD(projectId);
+            try {
+                const brdId = await brdGeneratorService.generateBRD(projectId, templateId);
+                console.log(`[BRD Generation] Successfully generated BRD ${brdId} for project ${projectId}`);
 
-            res.json({
-                success: true,
-                data: { brdId },
-            });
+                res.json({
+                    success: true,
+                    data: { brdId },
+                });
+            } catch (error) {
+                console.error('[BRD Generation] Error:', error);
+                // Update project status to error
+                await prisma.project.update({
+                    where: { id: projectId },
+                    data: { status: 'error' },
+                });
+                throw error;
+            }
         }
     })
 );
@@ -162,7 +190,7 @@ router.get(
     '/:projectId',
     requireAuth,
     asyncHandler(async (req: Request, res: Response) => {
-        const { projectId } = req.params;
+        const projectId = req.params.projectId as string;
 
         // Verify project ownership
         const project = await prisma.project.findFirst({
@@ -197,7 +225,7 @@ router.get(
     '/:projectId/stats',
     requireAuth,
     asyncHandler(async (req: Request, res: Response) => {
-        const { projectId } = req.params;
+        const projectId = req.params.projectId as string;
 
         // Verify project ownership
         const project = await prisma.project.findFirst({
@@ -233,7 +261,8 @@ router.get(
     '/:projectId/export/:format',
     requireAuth,
     asyncHandler(async (req: Request, res: Response) => {
-        const { projectId, format } = req.params;
+        const projectId = req.params.projectId as string;
+        const format = req.params.format as string;
 
         // Verify project ownership
         const project = await prisma.project.findFirst({

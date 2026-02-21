@@ -113,7 +113,11 @@ export class ExtractionService {
      * @returns Array of extracted items
      */
     private async extractInformation(text: string): Promise<ExtractedItem[]> {
-        if (MOCK_MODE) {
+        // Check MOCK_MODE at runtime, not at module load time
+        const mockMode = process.env.MOCK_MODE === 'true';
+        
+        if (mockMode) {
+            console.log('[Extraction] Using MOCK MODE');
             return this.mockExtract(text);
         }
 

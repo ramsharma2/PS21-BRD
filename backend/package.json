@@ -1,19 +1,22 @@
 {
-    "name": "brd-backend",
+    "name": "brdify-backend",
     "version": "1.0.0",
-    "description": "Backend API for BRD Generator",
+    "description": "Backend API for BRDify - AI-Powered BRD Generator",
     "main": "dist/index.js",
     "scripts": {
         "dev": "tsx watch src/index.ts",
         "build": "tsc",
         "start": "node dist/index.js",
-        "db:generate": "prisma generate",
-        "db:migrate": "prisma migrate dev",
-        "db:push": "prisma db push",
+        "db:generate": "prisma generate --schema=src/db/schema.prisma",
+        "db:migrate": "prisma migrate dev --schema=src/db/schema.prisma",
+        "db:push": "prisma db push --schema=src/db/schema.prisma",
         "db:seed": "tsx src/utils/seed.ts",
-        "db:studio": "prisma studio",
+        "db:studio": "prisma studio --schema=src/db/schema.prisma",
         "lint": "eslint src --ext .ts",
         "format": "prettier --write \"src/**/*.ts\""
+    },
+    "prisma": {
+        "schema": "src/db/schema.prisma"
     },
     "dependencies": {
         "@clerk/clerk-sdk-node": "^5.0.0",

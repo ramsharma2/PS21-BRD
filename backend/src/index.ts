@@ -100,7 +100,7 @@ app.listen(PORT, () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   🚀 BRD Generator API Server                            ║
+║   🚀 BRDify API Server                                   ║
 ║                                                           ║
 ║   Environment: ${(process.env.NODE_ENV || 'development').padEnd(42)} ║
 ║   Port:        ${PORT.toString().padEnd(42)} ║
