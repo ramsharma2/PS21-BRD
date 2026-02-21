@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+
 
 const prisma = new PrismaClient();
 
@@ -40,14 +40,14 @@ async function main() {
                 projectId: project.id,
                 sourceType: 'document',
                 rawContent: 'The system must support high-volume transactions during peak sales events like Black Friday. Load balancing is critical.',
-                metadata: { fileName: 'Architecture_Specs.pdf', sourceLabel: 'Tech Specs' },
+                metadata: JSON.stringify({ fileName: 'Architecture_Specs.pdf', sourceLabel: 'Tech Specs' }),
                 ingestedAt: new Date(),
             },
             {
                 projectId: project.id,
                 sourceType: 'manual',
                 rawContent: 'Users need to be able to checkout as guests without creating an account. This is a top priority for conversion rates.',
-                metadata: { sourceLabel: 'Stakeholder Interview' },
+                metadata: JSON.stringify({ sourceLabel: 'Stakeholder Interview' }),
                 ingestedAt: new Date(),
             },
         ],
@@ -60,19 +60,27 @@ async function main() {
         data: {
             projectId: project.id,
             version: 1,
-            status: 'completed',
-            content: {
-                "Executive Summary": "This document outlines the requirements for the new E-Commerce platform...",
-                "Scope": "In-scope: User auth, Product catalog, Cart, Checkout. Out-of-scope: Legacy data migration.",
-                "Functional Requirements": "- The system shall allow guest checkout.\n- The system shall support OAuth login (Google, Facebook).",
-                "Non-Functional Requirements": "- The system must handle 10,000 concurrent users.\n- Page load time must be under 2 seconds.",
-            },
+            executiveSummary: "This document outlines the requirements for the new E-Commerce platform...",
+            scope: "In-scope: User auth, Product catalog, Cart, Checkout. Out-of-scope: Legacy data migration.",
+            functionalRequirements: "- The system shall allow guest checkout.\n- The system shall support OAuth login (Google, Facebook).",
+            nonFunctionalRequirements: "- The system must handle 10,000 concurrent users.\n- Page load time must be under 2 seconds.",
+            businessObjectives: "",
+            stakeholderAnalysis: "",
+            assumptions: "",
+            constraints: "",
+            risks: "",
+            successMetrics: "",
+            timeline: "",
+            glossary: "",
         },
     });
 
     console.log(`✅ BRD generated: ${brd.id}`);
 
     // 6. Create Extractions (for RTM)
+    const sourceManual = await prisma.source.findFirst({ where: { projectId: project.id, sourceType: 'manual' } });
+    const sourceDoc = await prisma.source.findFirst({ where: { projectId: project.id, sourceType: 'document' } });
+
     await prisma.extraction.createMany({
         data: [
             {
@@ -80,14 +88,14 @@ async function main() {
                 content: "The system shall allow guest checkout.",
                 category: "functional_req",
                 priority: "High",
-                sourceId: (await prisma.source.findFirst({ where: { projectId: project.id, sourceType: 'manual' } }))?.id || '',
+                citations: JSON.stringify([{ sourceId: sourceManual?.id || '', fileName: 'Manual' }]),
             },
             {
                 projectId: project.id,
                 content: "The system must handle 10,000 concurrent users.",
                 category: "nonfunctional_req",
                 priority: "Critical",
-                sourceId: (await prisma.source.findFirst({ where: { projectId: project.id, sourceType: 'document' } }))?.id || '',
+                citations: JSON.stringify([{ sourceId: sourceDoc?.id || '', fileName: 'Architecture_Specs.pdf' }]),
             },
         ],
     });
@@ -98,10 +106,12 @@ async function main() {
     await prisma.conflict.create({
         data: {
             projectId: project.id,
-            description: "Security vs Usability: Guest checkout requirement conflicts with 'All users must be verified' security policy.",
+            description: "[MEDIUM] Security vs Usability: Guest checkout requirement conflicts with 'All users must be verified' security policy.",
             status: 'open',
-            severity: 'medium',
-            detectedAt: new Date(),
+            itemA: 'Guest Checkout',
+            itemB: 'All users must be verified',
+            sourceA: '',
+            sourceB: ''
         },
     });
 

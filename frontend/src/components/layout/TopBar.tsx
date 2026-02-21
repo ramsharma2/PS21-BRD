@@ -1,10 +1,25 @@
-import { UserButton, useUser } from '@clerk/clerk-react';
-import { Bell, Search, Sparkles } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Bell, Search, Sparkles, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useNavigate } from 'react-router-dom';
 
 export default function TopBar() {
-    const { user } = useUser();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
 
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white/80 dark:bg-gray-950/80 backdrop-blur-md px-6 shadow-sm">
@@ -36,9 +51,9 @@ export default function TopBar() {
             {/* Right side */}
             <div className="flex items-center gap-3">
                 {/* Notifications */}
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     className="relative hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                     <Bell className="h-5 w-5" />
@@ -49,26 +64,40 @@ export default function TopBar() {
                 <div className="h-8 w-px bg-gray-200 dark:bg-gray-800"></div>
 
                 {/* User menu */}
-                <div className="flex items-center gap-3">
-                    <div className="text-right hidden lg:block">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {user?.fullName || 'User'}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                            {user?.primaryEmailAddress?.emailAddress}
-                        </div>
-                    </div>
-                    <div className="ring-2 ring-gray-200 dark:ring-gray-800 rounded-full">
-                        <UserButton 
-                            afterSignOutUrl="/sign-in"
-                            appearance={{
-                                elements: {
-                                    avatarBox: "w-9 h-9"
-                                }
-                            }}
-                        />
-                    </div>
-                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="relative flex items-center gap-3 p-1 hover:bg-transparent pr-2 mr-2">
+                            <div className="text-right hidden lg:block">
+                                <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                    {user?.name || 'User'}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                    {user?.email}
+                                </div>
+                            </div>
+                            <div className="h-9 w-9 overflow-hidden rounded-full ring-2 ring-gray-200 dark:ring-gray-800 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                {user?.picture ? (
+                                    <img src={user.picture} alt={user.name} className="h-full w-full object-cover" />
+                                ) : (
+                                    <User className="h-5 w-5 text-gray-400" />
+                                )}
+                            </div>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{user?.name}</p>
+                                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-950 dark:focus:text-red-500 cursor-pointer">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Log out</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </header>
     );

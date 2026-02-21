@@ -66,7 +66,7 @@ router.post('/apply', requireAuth, async (req, res, next) => {
 router.get('/:brdId/history', requireAuth, async (req, res, next) => {
     try {
         const { brdId } = req.params;
-        const history = await getVersionHistory(brdId);
+        const history = await getVersionHistory(brdId as string);
         res.json(history);
     } catch (error) {
         next(error);
@@ -81,7 +81,7 @@ router.get('/:brdId/history', requireAuth, async (req, res, next) => {
 router.post('/:brdId/rollback/:versionId', requireAuth, async (req, res, next) => {
     try {
         const { brdId, versionId } = req.params;
-        const result = await rollbackToVersion(brdId, versionId);
+        const result = await rollbackToVersion(brdId as string, versionId as string);
         res.json(result);
     } catch (error) {
         next(error);

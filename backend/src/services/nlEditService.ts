@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { prisma } from '../index';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 import { BRD_EDIT_PROMPT } from '../utils/prompts';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -30,7 +31,21 @@ export const processEditRequest = async (request: EditRequest): Promise<EditResu
             throw new Error('BRD not found');
         }
 
-        const currentContent = brd.content as any;
+        const currentContent = {
+            executiveSummary: brd.executiveSummary,
+            businessObjectives: brd.businessObjectives,
+            stakeholderAnalysis: brd.stakeholderAnalysis,
+            scope: brd.scope,
+            functionalRequirements: brd.functionalRequirements,
+            nonFunctionalRequirements: brd.nonFunctionalRequirements,
+            assumptions: brd.assumptions,
+            constraints: brd.constraints,
+            risks: brd.risks,
+            successMetrics: brd.successMetrics,
+            timeline: brd.timeline,
+            glossary: brd.glossary,
+            rtm: brd.rtm ? JSON.parse(brd.rtm) : null,
+        };
 
         // 2. Prepare context for AI
         // If a specific section is targeted, we emphasize it, otherwise provided full context
@@ -64,20 +79,24 @@ export const processEditRequest = async (request: EditRequest): Promise<EditResu
         const newVersion = await prisma.bRDVersion.create({
             data: {
                 brdId: request.brdId,
-                content: parsedResponse.content,
-                changeLog: request.instruction,
-                versionNumber: (brd.version || 0) + 1,
-                createdBy: 'AI_EDIT', // TODO: Pass user ID if available
+                snapshot: JSON.stringify(parsedResponse.content),
+                editNote: request.instruction,
+                version: (brd.version || 0) + 1,
             },
         });
 
         // 8. Update main BRD record
+        const updateData: any = { version: { increment: 1 } };
+        const allowedFields = ['executiveSummary', 'businessObjectives', 'stakeholderAnalysis', 'scope', 'functionalRequirements', 'nonFunctionalRequirements', 'assumptions', 'constraints', 'risks', 'successMetrics', 'timeline', 'glossary', 'rtm'];
+        for (const field of allowedFields) {
+            if (parsedResponse.content[field] !== undefined) {
+                updateData[field] = typeof parsedResponse.content[field] === 'string' ? parsedResponse.content[field] : JSON.stringify(parsedResponse.content[field]);
+            }
+        }
+
         await prisma.bRD.update({
             where: { id: request.brdId },
-            data: {
-                content: parsedResponse.content,
-                version: { increment: 1 },
-            },
+            data: updateData,
         });
 
         return {
@@ -99,10 +118,9 @@ export const getVersionHistory = async (brdId: string) => {
         orderBy: { createdAt: 'desc' },
         select: {
             id: true,
-            versionNumber: true,
+            version: true,
             createdAt: true,
-            changeLog: true,
-            createdBy: true,
+            editNote: true,
         }
     });
 };
@@ -114,24 +132,29 @@ export const rollbackToVersion = async (brdId: string, versionId: string) => {
 
     if (!version) throw new Error('Version not found');
 
-    // Create a new version that is a copy of the old one (to preserve linear history)
+    const content = version.snapshot ? JSON.parse(version.snapshot) : {};
+
     const currentBrd = await prisma.bRD.findUnique({ where: { id: brdId } });
 
     await prisma.bRDVersion.create({
         data: {
             brdId,
-            content: version.content || {},
-            changeLog: `Rollback to version ${version.versionNumber}`,
-            versionNumber: (currentBrd?.version || 0) + 1,
-            createdBy: 'SYSTEM_ROLLBACK',
+            snapshot: version.snapshot,
+            editNote: `Rollback to version ${version.version}`,
+            version: (currentBrd?.version || 0) + 1,
         },
     });
 
+    const updateData: any = { version: { increment: 1 } };
+    const allowedFields = ['executiveSummary', 'businessObjectives', 'stakeholderAnalysis', 'scope', 'functionalRequirements', 'nonFunctionalRequirements', 'assumptions', 'constraints', 'risks', 'successMetrics', 'timeline', 'glossary', 'rtm'];
+    for (const field of allowedFields) {
+        if (content[field] !== undefined) {
+            updateData[field] = typeof content[field] === 'string' ? content[field] : JSON.stringify(content[field]);
+        }
+    }
+
     return await prisma.bRD.update({
         where: { id: brdId },
-        data: {
-            content: version.content || {},
-            version: { increment: 1 },
-        },
+        data: updateData,
     });
 };

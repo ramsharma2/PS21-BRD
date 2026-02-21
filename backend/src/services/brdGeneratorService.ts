@@ -173,7 +173,7 @@ export class BRDGeneratorService {
     private async generateExecutiveSummary(extractions: Record<string, any[]>): Promise<any> {
         // Check MOCK_MODE at runtime
         const mockMode = process.env.MOCK_MODE === 'true';
-        
+
         if (mockMode) {
             console.log('[BRD Generator] Using MOCK MODE for Executive Summary');
             return {
@@ -210,7 +210,7 @@ export class BRDGeneratorService {
      */
     private async generateBusinessObjectives(extractions: Record<string, any[]>): Promise<any> {
         const objectives = extractions.objective || [];
-        
+
         // Check MOCK_MODE at runtime
         const mockMode = process.env.MOCK_MODE === 'true';
 
@@ -256,7 +256,7 @@ Respond with JSON:
      */
     private async generateStakeholderAnalysis(extractions: Record<string, any[]>): Promise<any> {
         const stakeholders = extractions.stakeholder || [];
-        
+
         // Check MOCK_MODE at runtime
         const mockMode = process.env.MOCK_MODE === 'true';
 
@@ -316,7 +316,7 @@ Respond with JSON:
             ...(extractions.functional_req || []),
             ...(extractions.nonfunctional_req || []),
         ];
-        
+
         // Check MOCK_MODE at runtime
         const mockMode = process.env.MOCK_MODE === 'true';
 
@@ -359,7 +359,7 @@ Respond with JSON:
      */
     private async generateFunctionalRequirements(extractions: Record<string, any[]>): Promise<any> {
         const functionalReqs = extractions.functional_req || [];
-        
+
         // Check MOCK_MODE at runtime
         const mockMode = process.env.MOCK_MODE === 'true';
 
@@ -401,7 +401,7 @@ Respond with JSON:
      */
     private async generateNonFunctionalRequirements(extractions: Record<string, any[]>): Promise<any> {
         const nfrs = extractions.nonfunctional_req || [];
-        
+
         // Check MOCK_MODE at runtime
         const mockMode = process.env.MOCK_MODE === 'true';
 

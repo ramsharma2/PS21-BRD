@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useProjectStore } from '@/store/projectStore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, RefreshCw, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import ConflictList from '@/components/brd/ConflictList';
 import { useToast } from '@/components/ui/use-toast';

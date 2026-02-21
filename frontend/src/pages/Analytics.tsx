@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { useProjectStore } from '@/store/projectStore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, BrainCircuit, ThumbsUp, ThumbsDown, Minus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {

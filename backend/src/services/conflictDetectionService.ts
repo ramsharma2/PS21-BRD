@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { prisma } from '../index';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 import { CONFLICT_DETECTION_SYSTEM_PROMPT, createConflictDetectionPrompt } from '../utils/prompts';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -83,10 +84,11 @@ export const detectConflicts = async (projectId: string): Promise<ConflictCheckR
                         await prisma.conflict.create({
                             data: {
                                 projectId,
-                                itemAId: itemA.id,
-                                itemBId: itemB.id,
-                                severity: analysis.severity,
-                                description: analysis.description,
+                                itemA: itemA.id,
+                                itemB: itemB.id,
+                                sourceA: '',
+                                sourceB: '',
+                                description: `[${analysis.severity?.toUpperCase()}] ${analysis.description}`,
                                 status: 'open',
                                 resolution: analysis.suggestedResolution
                             }
@@ -108,10 +110,6 @@ export const detectConflicts = async (projectId: string): Promise<ConflictCheckR
 export const getProjectConflicts = async (projectId: string) => {
     return await prisma.conflict.findMany({
         where: { projectId },
-        include: {
-            itemA: true,
-            itemB: true
-        }
     });
 };
 

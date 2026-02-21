@@ -14,7 +14,7 @@ import {
 import { ArrowLeft, Download, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { exportRTMToExcel } from '@/services/exportService';
+import { exportBRDToPDF, exportBRDToWord } from '@/services/exportService';
 
 export default function Traceability() {
     const { projectId } = useParams<{ projectId: string }>();

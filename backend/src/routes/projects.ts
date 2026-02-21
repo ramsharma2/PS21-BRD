@@ -72,7 +72,7 @@ router.get(
     asyncHandler(async (req: Request, res: Response) => {
         const project = await prisma.project.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 userId: req.userId,
             },
             include: {
@@ -142,7 +142,7 @@ router.patch(
         // Verify ownership
         const existing = await prisma.project.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 userId: req.userId,
             },
         });
@@ -152,7 +152,7 @@ router.patch(
         }
 
         const project = await prisma.project.update({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             data: validatedData,
         });
 
@@ -174,7 +174,7 @@ router.delete(
         // Verify ownership
         const existing = await prisma.project.findFirst({
             where: {
-                id: req.params.id,
+                id: req.params.id as string,
                 userId: req.userId,
             },
         });
@@ -184,7 +184,7 @@ router.delete(
         }
 
         await prisma.project.delete({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
         });
 
         res.json({

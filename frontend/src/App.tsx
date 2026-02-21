@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SignIn, SignUp, useAuth } from '@clerk/clerk-react';
+import { useAuth } from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import Loading from './components/common/Loading';
@@ -16,65 +16,49 @@ const Conflicts = lazy(() => import('./pages/Conflicts'));
 const Traceability = lazy(() => import('./pages/Traceability'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Login = lazy(() => import('./pages/Login'));
 
 function App() {
     return (
         <ErrorBoundary>
             <BrowserRouter>
-                <ClerkTokenProvider>
-                    <Suspense fallback={<Loading />}>
-                        <Routes>
-                            {/* Auth routes */}
-                            <Route path="/sign-in/*" element={<SignIn routing="path" path="/sign-in" />} />
-                            <Route path="/sign-up/*" element={<SignUp routing="path" path="/sign-up" />} />
+                <Suspense fallback={<Loading />}>
+                    <Routes>
+                        {/* Auth routes */}
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/sign-in/*" element={<Navigate to="/login" replace />} />
+                        <Route path="/sign-up/*" element={<Navigate to="/login" replace />} />
 
-                            {/* Protected routes */}
-                            <Route element={<ProtectedRoute />}>
-                                <Route path="/" element={<Dashboard />} />
-                                <Route path="/projects/new" element={<NewProject />} />
-                                <Route path="/projects/:projectId/ingest" element={<DataIngestion />} />
-                                <Route path="/projects/:projectId/dataset-import" element={<DatasetImport />} />
-                                <Route path="/projects/:projectId/brd" element={<BRDEditor />} />
-                                <Route path="/projects/:projectId/conflicts" element={<Conflicts />} />
-                                <Route path="/projects/:projectId/traceability" element={<Traceability />} />
-                                <Route path="/projects/:projectId/analytics" element={<Analytics />} />
-                                <Route path="/settings" element={<Settings />} />
-                            </Route>
+                        {/* Protected routes */}
+                        <Route element={<ProtectedRoute />}>
+                            <Route path="/" element={<Dashboard />} />
+                            <Route path="/projects/new" element={<NewProject />} />
+                            <Route path="/projects/:projectId/ingest" element={<DataIngestion />} />
+                            <Route path="/projects/:projectId/dataset-import" element={<DatasetImport />} />
+                            <Route path="/projects/:projectId/brd" element={<BRDEditor />} />
+                            <Route path="/projects/:projectId/conflicts" element={<Conflicts />} />
+                            <Route path="/projects/:projectId/traceability" element={<Traceability />} />
+                            <Route path="/projects/:projectId/analytics" element={<Analytics />} />
+                            <Route path="/settings" element={<Settings />} />
+                        </Route>
 
-                            {/* Catch all */}
-                            <Route path="*" element={<Navigate to="/" replace />} />
-                        </Routes>
-                    </Suspense>
-                    <Toaster />
-                </ClerkTokenProvider>
+                        {/* Catch all */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                </Suspense>
+                <Toaster />
             </BrowserRouter>
         </ErrorBoundary>
     );
 }
 
 /**
- * Provider that exposes Clerk's getToken to the global window object
- * This allows the API client to access the auth token
- */
-function ClerkTokenProvider({ children }: { children: React.ReactNode }) {
-    const { getToken } = useAuth();
-
-    // Set up global token getter for API client
-    if (typeof window !== 'undefined') {
-        // @ts-ignore
-        window.__CLERK_GET_TOKEN__ = getToken;
-    }
-
-    return <>{children}</>;
-}
-
-/**
  * Protected route wrapper that requires authentication
  */
 function ProtectedRoute() {
-    const { isLoaded, isSignedIn } = useAuth();
+    const { user, isLoading } = useAuth();
 
-    if (!isLoaded) {
+    if (isLoading) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <div className="text-center">
@@ -85,8 +69,8 @@ function ProtectedRoute() {
         );
     }
 
-    if (!isSignedIn) {
-        return <Navigate to="/sign-in" replace />;
+    if (!user) {
+        return <Navigate to="/login" replace />;
     }
 
     return <Layout />;

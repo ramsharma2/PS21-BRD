@@ -1,4 +1,5 @@
-import { prisma } from '../index';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 interface RTMEntry {
     requirementId: string;
@@ -16,9 +17,6 @@ export const generateRTM = async (projectId: string): Promise<RTMEntry[]> => {
         where: {
             projectId,
             category: { in: ['functional_req', 'nonfunctional_req'] }
-        },
-        include: {
-            source: true
         }
     });
 
@@ -31,13 +29,25 @@ export const generateRTM = async (projectId: string): Promise<RTMEntry[]> => {
         if (req.category === 'functional_req') section = 'Functional Requirements';
         if (req.category === 'nonfunctional_req') section = 'Non-Functional Requirements';
 
+        let sourceId = '';
+        let sourceName = 'Unknown';
+        try {
+            if (req.citations) {
+                const citationsArr = JSON.parse(req.citations);
+                if (Array.isArray(citationsArr) && citationsArr.length > 0) {
+                    sourceId = citationsArr[0].sourceId || '';
+                    sourceName = citationsArr[0].fileName || citationsArr[0].sourceId || 'Unknown Source';
+                }
+            }
+        } catch (e) { }
+
         return {
             requirementId: req.id,
             requirement: req.content,
-            sourceId: req.sourceId,
-            sourceName: req.source.filename,
+            sourceId,
+            sourceName,
             brdSection: section,
-            priority: req.priority,
+            priority: req.priority || 'Not Specified',
             status: 'Draft' // Default status
         };
     });

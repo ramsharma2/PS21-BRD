@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ClerkProvider } from '@clerk/clerk-react';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import './index.css';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Initialize React Query client
 const queryClient = new QueryClient({
@@ -16,22 +17,25 @@ const queryClient = new QueryClient({
     },
 });
 
-// Get Clerk publishable key from environment
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// Get Google client ID from environment
+// @ts-ignore
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-if (!clerkPubKey) {
-    console.warn('Missing Clerk publishable key. Running without authentication.');
+if (!googleClientId) {
+    console.warn('Missing Google Client ID. Authentication will not work.');
 }
 
-// Render with or without Clerk based on key availability
+// Render with Google OAuth
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        {clerkPubKey ? (
-            <ClerkProvider publishableKey={clerkPubKey}>
-                <QueryClientProvider client={queryClient}>
-                    <App />
-                </QueryClientProvider>
-            </ClerkProvider>
+        {googleClientId ? (
+            <GoogleOAuthProvider clientId={googleClientId}>
+                <AuthProvider>
+                    <QueryClientProvider client={queryClient}>
+                        <App />
+                    </QueryClientProvider>
+                </AuthProvider>
+            </GoogleOAuthProvider>
         ) : (
             <QueryClientProvider client={queryClient}>
                 <App />

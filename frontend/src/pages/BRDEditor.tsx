@@ -31,7 +31,7 @@ function transformBRDForExport(brd: any) {
             const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
 
             if (Array.isArray(value)) {
-                result += `${label}:\n${value.map((item, i) => `  • ${typeof item === 'object' ? JSON.stringify(item) : item}`).join('\n')}\n\n`;
+                result += `${label}:\n${value.map((item) => `  • ${typeof item === 'object' ? JSON.stringify(item) : item}`).join('\n')}\n\n`;
             } else if (typeof value === 'object' && value !== null) {
                 result += `${label}:\n${formatObject(value)}\n`;
             } else {
@@ -90,7 +90,7 @@ export default function BRDEditor() {
     });
 
     // Fetch BRD
-    const { data: brd, refetch: refetchBRD, isError: brdError } = useQuery({
+    const { data: brd, refetch: refetchBRD } = useQuery({
         queryKey: ['brd', projectId],
         queryFn: () => api.getBRD(projectId!),
         enabled: !!projectId,
@@ -163,7 +163,7 @@ export default function BRDEditor() {
                 description: data.explanation,
             });
         },
-        onError: (error) => {
+        onError: () => {
             toast({
                 title: "Edit Failed",
                 description: "Failed to apply edit. Please try again.",
@@ -204,10 +204,6 @@ export default function BRDEditor() {
                 variant: 'destructive',
             });
         }
-    };
-
-    const handleExport = (format: 'json' | 'md') => {
-        exportMutation.mutate(format);
     };
 
     const handleEdit = async (instruction: string) => {

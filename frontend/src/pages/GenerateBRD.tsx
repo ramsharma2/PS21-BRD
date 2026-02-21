@@ -16,8 +16,8 @@ export function GenerateBRD() {
 
         setIsGenerating(true);
         try {
-            await api.post(`/brd/generate/${projectId}`, { templateId });
-            
+            await api.generateBRD(projectId, templateId);
+
             toast({
                 title: 'Success',
                 description: 'BRD generated successfully!',

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { clerkClient } from '@clerk/clerk-sdk-node';
+import { OAuth2Client } from 'google-auth-library';
 import { ApiError } from './errorHandler';
 
 /**
@@ -13,13 +13,26 @@ declare global {
     }
 }
 
+let _client: OAuth2Client;
+
+const getAuthClient = () => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+        throw new ApiError(500, 'GOOGLE_CLIENT_ID is not configured');
+    }
+    if (!_client) {
+        _client = new OAuth2Client(clientId);
+    }
+    return { client: _client, clientId };
+};
+
 /**
- * Authentication middleware using Clerk
- * Verifies the session token and attaches userId to the request
+ * Authentication middleware using Google Auth Library
+ * Verifies the ID token and attaches userId to the request
  */
 export const requireAuth = async (req: Request, _res: Response, next: NextFunction) => {
     try {
-        // Get the session token from the Authorization header
+        // Get the token from the Authorization header
         const authHeader = req.headers.authorization;
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -28,16 +41,20 @@ export const requireAuth = async (req: Request, _res: Response, next: NextFuncti
 
         const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-        // Verify the JWT token with Clerk
-        const payload = await clerkClient.verifyToken(token, {
-            secretKey: process.env.CLERK_SECRET_KEY,
+        // Verify the Google ID token
+        const { client, clientId } = getAuthClient();
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: clientId,
         });
+
+        const payload = ticket.getPayload();
 
         if (!payload || !payload.sub) {
             throw new ApiError(401, 'Invalid or expired session');
         }
 
-        // Attach userId to request (sub is the user ID in Clerk JWTs)
+        // Attach userId to request (sub is the unique Google user ID)
         req.userId = payload.sub;
 
         next();
@@ -60,11 +77,21 @@ export const optionalAuth = async (req: Request, _res: Response, next: NextFunct
         const authHeader = req.headers.authorization;
 
         if (authHeader && authHeader.startsWith('Bearer ')) {
-            const sessionToken = authHeader.substring(7);
-            const session = await clerkClient.sessions.verifySession(sessionToken, sessionToken);
+            const token = authHeader.substring(7);
 
-            if (session && session.userId) {
-                req.userId = session.userId;
+            try {
+                const { client, clientId } = getAuthClient();
+                const ticket = await client.verifyIdToken({
+                    idToken: token,
+                    audience: clientId,
+                });
+
+                const payload = ticket.getPayload();
+                if (payload && payload.sub) {
+                    req.userId = payload.sub;
+                }
+            } catch (err) {
+                // Ignore invalid token for optional auth
             }
         }
 
