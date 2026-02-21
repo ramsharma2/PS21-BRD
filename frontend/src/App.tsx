@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SignIn, SignUp, useAuth } from '@clerk/clerk-react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import Loading from './components/common/Loading';
@@ -16,17 +16,17 @@ const Conflicts = lazy(() => import('./pages/Conflicts'));
 const Traceability = lazy(() => import('./pages/Traceability'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Login = lazy(() => import('./pages/Login'));
 
 function App() {
     return (
         <ErrorBoundary>
             <BrowserRouter>
-                <ClerkTokenProvider>
+                <AuthProvider>
                     <Suspense fallback={<Loading />}>
                         <Routes>
                             {/* Auth routes */}
-                            <Route path="/sign-in/*" element={<SignIn routing="path" path="/sign-in" />} />
-                            <Route path="/sign-up/*" element={<SignUp routing="path" path="/sign-up" />} />
+                            <Route path="/login" element={<Login />} />
 
                             {/* Protected routes */}
                             <Route element={<ProtectedRoute />}>
@@ -48,35 +48,19 @@ function App() {
                         </Routes>
                     </Suspense>
                     <Toaster />
-                </ClerkTokenProvider>
+                </AuthProvider>
             </BrowserRouter>
         </ErrorBoundary>
     );
 }
 
 /**
- * Provider that exposes Clerk's getToken to the global window object
- * This allows the API client to access the auth token
- */
-function ClerkTokenProvider({ children }: { children: React.ReactNode }) {
-    const { getToken } = useAuth();
-
-    // Set up global token getter for API client
-    if (typeof window !== 'undefined') {
-        // @ts-ignore
-        window.__CLERK_GET_TOKEN__ = getToken;
-    }
-
-    return <>{children}</>;
-}
-
-/**
  * Protected route wrapper that requires authentication
  */
 function ProtectedRoute() {
-    const { isLoaded, isSignedIn } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
 
-    if (!isLoaded) {
+    if (isLoading) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <div className="text-center">
@@ -87,8 +71,8 @@ function ProtectedRoute() {
         );
     }
 
-    if (!isSignedIn) {
-        return <Navigate to="/sign-in" replace />;
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
     }
 
     return <Layout />;

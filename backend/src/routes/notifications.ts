@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
-import { prisma } from '../index';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 import { sendStatusEmail } from '../services/emailService';
 
 const router = Router();

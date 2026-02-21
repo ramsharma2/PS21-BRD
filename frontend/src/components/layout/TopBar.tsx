@@ -1,10 +1,10 @@
-import { UserButton, useUser } from '@clerk/clerk-react';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Search, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function TopBar() {
-    const { user } = useUser();
+    const { user, logout } = useAuth();
 
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-6">
@@ -30,13 +30,18 @@ export default function TopBar() {
 
                 {/* User menu */}
                 <div className="flex items-center gap-3">
+                    {user?.picture && (
+                        <img src={user.picture} alt="Avatar" className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
+                    )}
                     <div className="text-right hidden sm:block">
-                        <div className="text-sm font-medium">{user?.fullName || 'User'}</div>
+                        <div className="text-sm font-medium">{user?.name || 'User'}</div>
                         <div className="text-xs text-muted-foreground">
-                            {user?.primaryEmailAddress?.emailAddress}
+                            {user?.email}
                         </div>
                     </div>
-                    <UserButton afterSignOutUrl="/sign-in" />
+                    <Button variant="ghost" size="icon" onClick={logout} title="Logout">
+                        <LogOut className="h-5 w-5" />
+                    </Button>
                 </div>
             </div>
         </header>

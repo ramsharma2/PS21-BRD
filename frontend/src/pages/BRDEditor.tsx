@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '@/services/api';
@@ -221,6 +221,13 @@ export default function BRDEditor() {
     }
 
     const hasExtractions = stats && stats.extraction.total > 0;
+
+    // Auto-generate if we navigated directly from processing and extraction succeeded
+    useEffect(() => {
+        if (project?.status === 'processing' && hasExtractions && !brd && !isGenerating && !generateMutation.isPending) {
+            handleGenerate();
+        }
+    }, [project?.status, hasExtractions, brd, isGenerating, generateMutation.isPending]);
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">

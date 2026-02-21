@@ -133,7 +133,7 @@ export class BRDGeneratorService {
         const prompt = createExecutiveSummaryPrompt(allExtractions);
 
         const model = genAI.getGenerativeModel({
-            model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
+            model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
             systemInstruction: BRD_SYSTEM_PROMPT,
         });
 
@@ -176,7 +176,7 @@ Respond with JSON:
 }`;
 
         const model = genAI.getGenerativeModel({
-            model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
+            model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
             systemInstruction: BRD_SYSTEM_PROMPT,
         });
 
@@ -229,7 +229,7 @@ Respond with JSON:
 }`;
 
         const model = genAI.getGenerativeModel({
-            model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
+            model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
             systemInstruction: BRD_SYSTEM_PROMPT,
         });
 
@@ -271,7 +271,7 @@ Respond with JSON:
 }`;
 
         const model = genAI.getGenerativeModel({
-            model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
+            model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
             systemInstruction: BRD_SYSTEM_PROMPT,
         });
 
@@ -309,7 +309,7 @@ Respond with JSON:
         const prompt = createFunctionalRequirementsPrompt(functionalReqs);
 
         const model = genAI.getGenerativeModel({
-            model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
+            model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
             systemInstruction: BRD_SYSTEM_PROMPT,
         });
 

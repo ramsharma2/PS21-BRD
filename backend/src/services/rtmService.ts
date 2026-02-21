@@ -1,4 +1,5 @@
-import { prisma } from '../index';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 interface RTMEntry {
     requirementId: string;
@@ -16,9 +17,6 @@ export const generateRTM = async (projectId: string): Promise<RTMEntry[]> => {
         where: {
             projectId,
             category: { in: ['functional_req', 'nonfunctional_req'] }
-        },
-        include: {
-            source: true
         }
     });
 
@@ -31,13 +29,26 @@ export const generateRTM = async (projectId: string): Promise<RTMEntry[]> => {
         if (req.category === 'functional_req') section = 'Functional Requirements';
         if (req.category === 'nonfunctional_req') section = 'Non-Functional Requirements';
 
+        let sourceId = 'Unknown Source ID';
+        let sourceName = 'Unknown Source';
+
+        try {
+            const citations = JSON.parse(req.citations || '[]');
+            if (citations && citations.length > 0) {
+                sourceId = citations[0].sourceId || sourceId;
+                // Currently storing full source details may require another query mapping, 
+                // but basic ID is stored in citations
+                sourceName = citations[0].sourceLabel || citations[0].sourceId || sourceName;
+            }
+        } catch (e) { }
+
         return {
             requirementId: req.id,
             requirement: req.content,
-            sourceId: req.sourceId,
-            sourceName: req.source.filename,
+            sourceId: sourceId,
+            sourceName: sourceName,
             brdSection: section,
-            priority: req.priority,
+            priority: req.priority || 'Unknown',
             status: 'Draft' // Default status
         };
     });

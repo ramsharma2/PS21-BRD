@@ -8,6 +8,13 @@ import type {
     BRD,
     ProjectStats,
     ApiResponse,
+    EditRequest,
+    EditResult,
+    BRDVersion,
+    ConflictCheckResponse,
+    Conflict,
+    RTMEntry,
+    SentimentAnalysisResult,
 } from '@/types';
 
 /**
@@ -18,6 +25,7 @@ class ApiClient {
 
     constructor() {
         this.client = axios.create({
+            // @ts-ignore - Ignore TS error for VITE_API_URL
             baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
             headers: {
                 'Content-Type': 'application/json',
@@ -26,19 +34,10 @@ class ApiClient {
 
         // Request interceptor to add auth token
         this.client.interceptors.request.use(
-            async (config) => {
-                // Get Clerk token from global window object (set by ClerkProvider)
-                // @ts-ignore
-                const getToken = window.__CLERK_GET_TOKEN__;
-                if (getToken) {
-                    try {
-                        const token = await getToken();
-                        if (token) {
-                            config.headers.Authorization = `Bearer ${token}`;
-                        }
-                    } catch (error) {
-                        console.error('Failed to get Clerk token:', error);
-                    }
+            (config) => {
+                const token = localStorage.getItem('auth_token');
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`;
                 }
                 return config;
             },

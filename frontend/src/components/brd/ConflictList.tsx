@@ -18,7 +18,7 @@ import {
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
-} from '@/components/ui/accordion';
+} from '@radix-ui/react-accordion';
 import { AlertTriangle, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';

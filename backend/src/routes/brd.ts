@@ -23,7 +23,7 @@ router.post(
     requireAuth,
     aiRateLimiter,
     asyncHandler(async (req: Request, res: Response) => {
-        const { projectId } = req.params;
+        const projectId = req.params.projectId as string;
 
         // Verify project ownership
         const project = await prisma.project.findFirst({
@@ -233,7 +233,8 @@ router.get(
     '/:projectId/export/:format',
     requireAuth,
     asyncHandler(async (req: Request, res: Response) => {
-        const { projectId, format } = req.params;
+        const projectId = req.params.projectId as string;
+        const format = req.params.format as string;
 
         // Verify project ownership
         const project = await prisma.project.findFirst({
@@ -278,32 +279,35 @@ router.get(
  */
 function generateMarkdown(brd: any): string {
     let md = `# Business Requirements Document\n\n`;
-    md += `**Project:** ${brd.project.name}\n`;
+    md += `**Project:** ${brd.project?.name || 'Unknown'}\n`;
     md += `**Version:** ${brd.version}\n`;
     md += `**Last Updated:** ${new Date(brd.updatedAt).toLocaleDateString()}\n\n`;
 
     md += `---\n\n`;
 
     // Executive Summary
+    const execSummary = tryParseJson(brd.executiveSummary);
     md += `## 1. Executive Summary\n\n`;
-    if (brd.executiveSummary.overview) {
-        md += `${brd.executiveSummary.overview}\n\n`;
+    if (execSummary?.overview) {
+        md += `${execSummary.overview}\n\n`;
     }
 
     // Business Objectives
+    const bizObjs = tryParseJson(brd.businessObjectives);
     md += `## 2. Business Objectives\n\n`;
-    if (brd.businessObjectives.primary) {
+    if (bizObjs?.primary) {
         md += `### Primary Objectives\n\n`;
-        brd.businessObjectives.primary.forEach((obj: string) => {
+        bizObjs.primary.forEach((obj: string) => {
             md += `- ${obj}\n`;
         });
         md += `\n`;
     }
 
     // Functional Requirements
+    const funcReqs = tryParseJson(brd.functionalRequirements);
     md += `## 3. Functional Requirements\n\n`;
-    if (brd.functionalRequirements.requirements) {
-        brd.functionalRequirements.requirements.forEach((req: any) => {
+    if (funcReqs?.requirements) {
+        funcReqs.requirements.forEach((req: any) => {
             md += `### ${req.id}: ${req.description}\n\n`;
             md += `**Priority:** ${req.priority}\n\n`;
             if (req.acceptanceCriteria) {
@@ -319,6 +323,17 @@ function generateMarkdown(brd: any): string {
     // Add other sections similarly...
 
     return md;
+}
+
+function tryParseJson(str: string | undefined): any {
+    if (!str) return {};
+    try {
+        return JSON.parse(str);
+    } catch {
+        // If it's already an object or a flat string, just return it
+        if (typeof str === 'object') return str;
+        return { content: str };
+    }
 }
 
 export default router;
