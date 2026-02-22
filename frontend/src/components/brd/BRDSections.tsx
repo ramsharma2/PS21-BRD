@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import type { BRD } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     FileText,
     Target,
@@ -12,6 +14,8 @@ import {
     TrendingUp,
     Calendar,
     BookOpen,
+    ExternalLink,
+    Loader2,
 } from 'lucide-react';
 import CitationBadge from './CitationBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -572,82 +576,169 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
 
             {/* Citation Detail Dialog */}
             <Dialog open={citationDialogOpen} onOpenChange={setCitationDialogOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <FileText className="h-5 w-5" />
-                            Citation #{selectedCitation?.number || '?'}
+                            Source Citation
                         </DialogTitle>
+                        <p className="text-sm text-muted-foreground">
+                            View the original source document that supports this requirement
+                        </p>
                     </DialogHeader>
                     
                     {loadingCitation ? (
                         <div className="py-8 text-center text-muted-foreground">
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
                             Loading citation details...
                         </div>
                     ) : selectedCitation ? (
                         <div className="space-y-4">
-                            {/* Requirement Information */}
-                            <div className="border rounded-lg p-4 bg-muted/50">
-                                <div className="text-sm font-medium mb-2">Requirement Details</div>
-                                <div className="space-y-2 text-sm">
-                                    <div>
-                                        <span className="font-medium">Category:</span>{' '}
-                                        <span className="text-muted-foreground capitalize">
-                                            {selectedCitation.category?.replace('_', ' ')}
-                                        </span>
-                                    </div>
-                                    {selectedCitation.priority && (
-                                        <div>
-                                            <span className="font-medium">Priority:</span>{' '}
-                                            <span className="text-muted-foreground">
-                                                {selectedCitation.priority}
-                                            </span>
+                            {/* Source Document Information */}
+                            {selectedCitation.sourceInfo && (
+                                <div className="border-2 border-primary/20 rounded-lg p-4 bg-primary/5">
+                                    <div className="flex items-start justify-between gap-4 mb-3">
+                                        <div className="flex-1">
+                                            <div className="text-sm font-medium text-primary mb-1">
+                                                📄 Source Document
+                                            </div>
+                                            <div className="space-y-1 text-sm">
+                                                {selectedCitation.sourceInfo.metadata && (() => {
+                                                    try {
+                                                        const metadata = typeof selectedCitation.sourceInfo.metadata === 'string'
+                                                            ? JSON.parse(selectedCitation.sourceInfo.metadata)
+                                                            : selectedCitation.sourceInfo.metadata;
+                                                        return (
+                                                            <>
+                                                                {metadata.filename && (
+                                                                    <div className="font-medium text-base">
+                                                                        {metadata.filename}
+                                                                    </div>
+                                                                )}
+                                                                {metadata.subject && (
+                                                                    <div className="text-muted-foreground">
+                                                                        <span className="font-medium">Subject:</span> {metadata.subject}
+                                                                    </div>
+                                                                )}
+                                                                {metadata.author && (
+                                                                    <div className="text-muted-foreground">
+                                                                        <span className="font-medium">Author:</span> {metadata.author}
+                                                                    </div>
+                                                                )}
+                                                                {metadata.date && (
+                                                                    <div className="text-muted-foreground">
+                                                                        <span className="font-medium">Date:</span> {new Date(metadata.date).toLocaleDateString()}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    } catch (e) {
+                                                        return null;
+                                                    }
+                                                })()}
+                                                <div className="text-muted-foreground">
+                                                    <span className="font-medium">Type:</span>{' '}
+                                                    <span className="capitalize">{selectedCitation.sourceInfo.sourceType}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    )}
-                                    <div>
-                                        <span className="font-medium">Confidence:</span>{' '}
-                                        <span className="text-muted-foreground">
-                                            {(selectedCitation.confidence * 100).toFixed(0)}%
-                                        </span>
+                                        {selectedCitation.sourceInfo.id && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    // Open source in new tab or download
+                                                    window.open(`/api/sources/${selectedCitation.sourceInfo.id}/download`, '_blank');
+                                                }}
+                                                className="flex-shrink-0"
+                                            >
+                                                <ExternalLink className="h-4 w-4 mr-2" />
+                                                View Document
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
+                            )}
+
+                            {/* Original Text from Source */}
+                            <div>
+                                <div className="text-sm font-medium mb-2 flex items-center gap-2">
+                                    <span>📝 Original Text from Source</span>
+                                    <Badge variant="secondary" className="text-xs">
+                                        Exact Quote
+                                    </Badge>
+                                </div>
+                                <div className="border-l-4 border-primary pl-4 py-2 bg-muted/30 rounded-r-lg">
+                                    <p className="text-sm text-foreground italic leading-relaxed">
+                                        "{selectedCitation.snippet || selectedCitation.content}"
+                                    </p>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    This is the exact text extracted from the source document that supports this requirement.
+                                </p>
                             </div>
 
-                            {/* Extracted Content */}
+                            {/* Extracted Requirement */}
                             <div>
-                                <div className="text-sm font-medium mb-2">Extracted Requirement</div>
+                                <div className="text-sm font-medium mb-2">🎯 Extracted Requirement</div>
                                 <div className="border rounded-lg p-4 bg-background">
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-sm text-foreground">
                                         {selectedCitation.content}
                                     </p>
                                 </div>
                             </div>
 
-                            {/* Source Information */}
-                            {selectedCitation.sourceInfo && (
-                                <div className="border rounded-lg p-4 bg-muted/50">
-                                    <div className="text-sm font-medium mb-2">Source Information</div>
-                                    <div className="space-y-1 text-sm text-muted-foreground">
+                            {/* Metadata */}
+                            <div className="border rounded-lg p-4 bg-muted/50">
+                                <div className="text-sm font-medium mb-2">ℹ️ Extraction Details</div>
+                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                    <div>
+                                        <span className="font-medium block text-muted-foreground">Category</span>
+                                        <span className="capitalize">
+                                            {selectedCitation.category?.replace('_', ' ')}
+                                        </span>
+                                    </div>
+                                    {selectedCitation.priority && (
                                         <div>
-                                            <span className="font-medium">Type:</span>{' '}
-                                            {selectedCitation.sourceInfo.sourceType}
+                                            <span className="font-medium block text-muted-foreground">Priority</span>
+                                            <span className="capitalize">{selectedCitation.priority}</span>
                                         </div>
-                                        {selectedCitation.sourceInfo.metadata && (() => {
-                                            try {
-                                                const metadata = typeof selectedCitation.sourceInfo.metadata === 'string'
-                                                    ? JSON.parse(selectedCitation.sourceInfo.metadata)
-                                                    : selectedCitation.sourceInfo.metadata;
-                                                return (
-                                                    <>
-                                                        {metadata.filename && <div><span className="font-medium">File:</span> {metadata.filename}</div>}
-                                                        {metadata.author && <div><span className="font-medium">Author:</span> {metadata.author}</div>}
-                                                        {metadata.date && <div><span className="font-medium">Date:</span> {new Date(metadata.date).toLocaleDateString()}</div>}
-                                                        {metadata.subject && <div><span className="font-medium">Subject:</span> {metadata.subject}</div>}
-                                                    </>
-                                                );
-                                            } catch (e) {
-                                                return null;
-                                            }
+                                    )}
+                                    <div>
+                                        <span className="font-medium block text-muted-foreground">Confidence</span>
+                                        <span>{(selectedCitation.confidence * 100).toFixed(0)}%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Traceability Link */}
+                            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-blue-600 dark:text-blue-400">🔗</span>
+                                    <span className="text-blue-900 dark:text-blue-100">
+                                        View full traceability matrix
+                                    </span>
+                                </div>
+                                <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={() => {
+                                        window.location.href = `/traceability/${brd.projectId}`;
+                                    }}
+                                    className="text-blue-600 dark:text-blue-400"
+                                >
+                                    Go to RTM →
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="py-8 text-center text-muted-foreground">
+                            <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                            <p>No citation information available</p>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
                                         })()}
                                     </div>
                                 </div>

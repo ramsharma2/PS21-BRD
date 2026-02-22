@@ -1,0 +1,393 @@
+From: sarah.chen@company.com
+To: mike.johnson@company.com, lisa.park@company.com
+Subject: RE: Mobile App Requirements - Urgent Discussion Needed
+Date: January 15, 2025 10:30 AM
+
+Hi Mike and Lisa,
+
+Thanks for joining the call yesterday. I wanted to follow up on the key requirements we discussed for the new mobile app project.
+
+CRITICAL REQUIREMENTS:
+
+1. User Authentication
+We absolutely need social login (Google, Apple, Facebook) in addition to email/password. Our analytics show 65% of users prefer social login. This is a MUST HAVE for launch.
+
+2. Offline Mode
+Users need to access their data even without internet connection. The app should sync automatically when connection is restored. This came up in multiple user interviews as a top pain point with our current web app.
+
+3. Push Notifications
+Real-time notifications for:
+- Order status updates
+- Promotional offers
+- Cart abandonment reminders
+- Price drop alerts on wishlist items
+
+4. Performance Requirements
+- App launch time must be under 2 seconds
+- Screen transitions should be smooth (60 FPS)
+- Image loading with progressive enhancement
+- App size should be under 50MB
+
+Let me know if you have any questions. We need to finalize these by EOW.
+
+Best,
+Sarah Chen
+Product Manager
+---
+
+From: mike.johnson@company.com
+To: sarah.chen@company.com, lisa.park@company.com
+Subject: RE: Mobile App Requirements - Urgent Discussion Needed
+Date: January 15, 2025 2:45 PM
+
+Sarah,
+
+Thanks for the summary. From a technical perspective, here are my thoughts:
+
+TECHNICAL REQUIREMENTS:
+
+1. Architecture
+- We should use React Native for cross-platform development (iOS + Android)
+- Implement Redux for state management
+- Use AsyncStorage for offline data persistence
+- RESTful API integration with JWT authentication
+
+2. Security Requirements (NON-NEGOTIABLE)
+- All API calls must use HTTPS/TLS 1.3
+- Biometric authentication (Face ID, Touch ID, fingerprint)
+- Secure storage for sensitive data using Keychain (iOS) and Keystore (Android)
+- Certificate pinning to prevent man-in-the-middle attacks
+- Session timeout after 15 minutes of inactivity
+
+3. Performance Targets
+- API response time under 200ms
+- Image caching to reduce data usage
+- Lazy loading for lists with 1000+ items
+- Memory usage under 150MB
+- Battery consumption optimization
+
+4. Testing Requirements
+- Unit test coverage minimum 80%
+- Integration tests for all critical flows
+- Automated UI testing with Detox
+- Performance testing on devices from last 3 years
+
+5. Platform Requirements
+- iOS 14+ support
+- Android 10+ support
+- Tablet optimization for both platforms
+- Support for both portrait and landscape orientations
+
+CONCERNS:
+- The offline mode will be complex. We need to handle conflict resolution when data changes on both server and device.
+- Push notifications require backend infrastructure changes. Do we have budget for Firebase/AWS SNS?
+- Social login integration will need OAuth setup for each provider. Timeline impact: +2 weeks.
+
+Let's schedule a technical deep-dive meeting next week.
+
+Mike Johnson
+Senior Software Engineer
+---
+
+From: lisa.park@company.com
+To: sarah.chen@company.com, mike.johnson@company.com
+Subject: RE: Mobile App Requirements - Urgent Discussion Needed
+Date: January 15, 2025 4:20 PM
+
+Hi Sarah and Mike,
+
+Great discussion! From UX perspective, here are the requirements:
+
+USER EXPERIENCE REQUIREMENTS:
+
+1. Onboarding Flow
+- Maximum 3 screens for first-time users
+- Skip option for returning users
+- Interactive tutorial with tooltips
+- Progress indicator showing completion percentage
+
+2. Navigation
+- Bottom tab bar for main sections (Home, Search, Cart, Profile)
+- Hamburger menu for secondary features
+- Back button behavior consistent with platform standards
+- Deep linking support for notifications and marketing campaigns
+
+3. Accessibility Requirements (WCAG 2.1 Level AA)
+- Screen reader support (VoiceOver, TalkBack)
+- Minimum touch target size: 44x44 points
+- Color contrast ratio minimum 4.5:1
+- Dynamic text sizing support
+- Haptic feedback for important actions
+
+4. Visual Design
+- Dark mode support (follows system preference)
+- Consistent with brand guidelines
+- Skeleton screens for loading states
+- Empty states with helpful messaging
+- Error states with recovery actions
+
+5. User Feedback
+- Loading indicators for all async operations
+- Success/error toast messages
+- Confirmation dialogs for destructive actions
+- Pull-to-refresh on list screens
+- Swipe gestures for common actions
+
+6. Search & Discovery
+- Search autocomplete with suggestions
+- Recent searches history
+- Voice search capability
+- Barcode scanner for product lookup
+- Visual search (upload photo to find similar products)
+
+USABILITY TESTING REQUIREMENTS:
+- Conduct usability testing with 10 users before launch
+- A/B testing framework for feature experiments
+- Analytics tracking for all user interactions
+- Crash reporting and error tracking
+- User feedback mechanism in-app
+
+TIMELINE CONCERNS:
+The visual search feature is complex. Can we move this to Phase 2? It requires ML model integration and significant backend work.
+
+Also, we need design system components ready by end of January for development to start on time.
+
+Lisa Park
+UX/UI Designer
+---
+
+From: sarah.chen@company.com
+To: mike.johnson@company.com, lisa.park@company.com, david.kim@company.com
+Subject: RE: Mobile App Requirements - FINAL SCOPE
+Date: January 16, 2025 9:00 AM
+
+Team,
+
+Thanks for all the input! I've consolidated everything and here's the FINAL SCOPE for Phase 1:
+
+PHASE 1 - MVP (Launch: April 1, 2025)
+
+IN SCOPE:
+✅ User authentication (email/password + social login)
+✅ Product browsing and search
+✅ Shopping cart and checkout
+✅ Order history and tracking
+✅ Push notifications (basic)
+✅ Offline mode (read-only)
+✅ Dark mode support
+✅ Biometric authentication
+✅ Basic analytics
+
+OUT OF SCOPE (Phase 2):
+❌ Visual search
+❌ Voice search
+❌ Barcode scanner
+❌ Advanced offline mode (write operations)
+❌ Tablet optimization
+❌ Landscape mode
+❌ AR product preview
+❌ Live chat support
+
+NON-FUNCTIONAL REQUIREMENTS SUMMARY:
+- Performance: App launch < 2s, API response < 200ms
+- Security: HTTPS, biometric auth, secure storage, session timeout
+- Accessibility: WCAG 2.1 Level AA compliance
+- Platform: iOS 14+, Android 10+
+- Testing: 80% code coverage, automated UI tests
+- Reliability: Crash-free rate > 99.5%
+
+CONSTRAINTS:
+- Budget: $300,000
+- Timeline: 12 weeks (Jan 20 - Apr 1)
+- Team: 3 developers, 1 designer, 1 QA
+- Must integrate with existing backend API
+
+RISKS:
+1. OAuth integration complexity - Medium risk
+2. Offline mode data sync conflicts - High risk
+3. App store approval delays - Medium risk
+4. Performance on older devices - Low risk
+
+DEPENDENCIES:
+- Backend API updates for mobile endpoints
+- Firebase setup for push notifications
+- App store developer accounts
+- SSL certificates
+- Third-party SDK integrations (analytics, crash reporting)
+
+NEXT STEPS:
+1. Mike: Technical architecture document by Jan 20
+2. Lisa: Design system and mockups by Jan 25
+3. David: Backend API specifications by Jan 22
+4. Sarah: Stakeholder approval by Jan 18
+
+Meeting scheduled for Jan 18 at 2 PM to get final sign-off.
+
+Sarah Chen
+Product Manager
+
+---
+
+From: david.kim@company.com
+To: sarah.chen@company.com, mike.johnson@company.com, lisa.park@company.com
+Subject: RE: Mobile App Requirements - Backend API Updates
+Date: January 16, 2025 11:30 AM
+
+Hi Team,
+
+I've reviewed the requirements. Here are the backend changes needed:
+
+BACKEND API REQUIREMENTS:
+
+1. New Endpoints Needed:
+- POST /api/v2/auth/social-login (Google, Apple, Facebook)
+- GET /api/v2/products/mobile (optimized response with smaller images)
+- POST /api/v2/devices/register (for push notifications)
+- GET /api/v2/sync/delta (for offline mode sync)
+- POST /api/v2/analytics/events (mobile event tracking)
+
+2. API Performance Requirements:
+- Response time < 200ms for 95th percentile
+- Support 10,000 concurrent mobile users
+- Rate limiting: 100 requests per minute per user
+- Pagination for all list endpoints (max 50 items per page)
+
+3. Data Optimization:
+- Image URLs with multiple sizes (thumbnail, medium, large)
+- Compressed JSON responses (gzip)
+- Conditional requests (ETag, If-Modified-Since)
+- GraphQL endpoint for flexible data fetching
+
+4. Security Enhancements:
+- JWT token refresh mechanism
+- Device fingerprinting for fraud detection
+- API key rotation every 90 days
+- Request signing for sensitive operations
+
+5. Infrastructure Requirements:
+- CDN for image delivery
+- Redis cache for frequently accessed data
+- Database read replicas for scaling
+- Load balancer with health checks
+
+TIMELINE:
+- API design: 1 week
+- Development: 3 weeks
+- Testing: 1 week
+- Deployment: 1 week
+Total: 6 weeks (ready by March 1)
+
+CONCERNS:
+The offline sync endpoint will be complex. We need to handle:
+- Conflict resolution strategy
+- Data versioning
+- Partial sync for large datasets
+- Bandwidth optimization
+
+This might need an additional 2 weeks. Can we simplify offline mode for Phase 1?
+
+David Kim
+Backend Lead
+---
+
+From: sarah.chen@company.com
+To: david.kim@company.com, mike.johnson@company.com, lisa.park@company.com
+Subject: RE: Mobile App Requirements - DECISION: Simplified Offline Mode
+Date: January 16, 2025 2:15 PM
+
+Team,
+
+After discussing with stakeholders, here's the decision:
+
+PHASE 1 OFFLINE MODE (SIMPLIFIED):
+- Read-only access to previously viewed products
+- Cache last 50 viewed products
+- Cache user's cart and wishlist
+- Show "offline" indicator in UI
+- No write operations while offline
+- Sync automatically when online
+
+This reduces complexity significantly and keeps us on timeline.
+
+PHASE 2 OFFLINE MODE (FULL):
+- Add to cart while offline
+- Update profile while offline
+- Conflict resolution
+- Full sync capability
+
+Everyone good with this approach?
+
+Sarah
+
+---
+
+From: mike.johnson@company.com
+To: sarah.chen@company.com, david.kim@company.com, lisa.park@company.com
+Subject: RE: Mobile App Requirements - DECISION: Simplified Offline Mode
+Date: January 16, 2025 3:00 PM
+
+Perfect! This is much more achievable. I'm on board.
+
+One more thing - we should add these to requirements:
+
+MONITORING & OBSERVABILITY:
+- Crash reporting (Sentry or Firebase Crashlytics)
+- Performance monitoring (response times, screen load times)
+- User analytics (screen views, button clicks, conversion funnels)
+- Error tracking and alerting
+- App version tracking for gradual rollout
+
+DEPLOYMENT REQUIREMENTS:
+- Staged rollout (5% → 25% → 50% → 100%)
+- Feature flags for A/B testing
+- Remote config for dynamic updates
+- Over-the-air updates for React Native code
+- App store optimization (ASO) - keywords, screenshots, description
+
+Mike
+---
+
+From: lisa.park@company.com
+To: sarah.chen@company.com, mike.johnson@company.com, david.kim@company.com
+Subject: RE: Mobile App Requirements - Design Deliverables
+Date: January 16, 2025 4:45 PM
+
+Sounds good! Here's what I'll deliver:
+
+DESIGN DELIVERABLES:
+
+1. Design System (by Jan 25):
+- Color palette (light + dark mode)
+- Typography scale
+- Spacing system
+- Component library (buttons, inputs, cards, etc.)
+- Icon set
+- Animation guidelines
+
+2. User Flows (by Jan 22):
+- Onboarding flow
+- Authentication flow
+- Product discovery flow
+- Checkout flow
+- Profile management flow
+
+3. High-Fidelity Mockups (by Jan 30):
+- All main screens (20+ screens)
+- Interactive prototype in Figma
+- Responsive layouts for different screen sizes
+- Loading and error states
+- Empty states
+
+4. Assets (by Feb 5):
+- App icons (all required sizes)
+- Splash screens
+- Marketing screenshots for app stores
+- Promotional graphics
+
+DESIGN REQUIREMENTS TO CONFIRM:
+- Brand colors: Primary #007AFF, Secondary #34C759
+- Font: SF Pro (iOS), Roboto (Android)
+- Border radius: 8px for cards, 4px for buttons
+- Shadow elevation: 2dp for cards, 4dp for modals
+
+Lisa

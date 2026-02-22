@@ -1,0 +1,122 @@
+PROJECT: Task Management Application
+
+MEETING NOTES - February 20, 2025
+Attendees: John Smith (Product Manager), Alice Wong (Developer)
+
+OVERVIEW:
+We need a simple task management application for our team. Currently using spreadsheets which is inefficient.
+
+BUSINESS OBJECTIVES:
+- Improve team productivity by 20%
+- Reduce time spent on task tracking from 2 hours/week to 30 minutes/week
+- Enable better visibility into project progress
+- Launch within 2 months
+
+STAKEHOLDER REQUIREMENTS:
+
+John (Product Manager):
+"The system must allow users to create, edit, and delete tasks. Each task should have a title, description, due date, priority, and assignee."
+
+"We need a dashboard showing all tasks with filtering by status, priority, and assignee. Users should see their own tasks by default."
+
+"Email notifications when tasks are assigned or due dates are approaching. Send reminder 24 hours before due date."
+
+Alice (Developer):
+"The application must be web-based and mobile-responsive. Most of our team works remotely on different devices."
+
+"User authentication is required. Only team members should access the system. Use email and password login."
+
+"The system should support up to 50 concurrent users. We have 30 team members currently."
+
+FUNCTIONAL REQUIREMENTS:
+
+User Management:
+- Users must register with email and password
+- Email verification required for new accounts
+- Password reset functionality via email
+- User profile with name, email, and avatar
+- Admin can add/remove users
+
+Task Management:
+- Create tasks with title, description, due date, priority (High/Medium/Low), and assignee
+- Edit existing tasks
+- Delete tasks (with confirmation)
+- Mark tasks as complete
+- Add comments to tasks
+- Attach files to tasks (max 10MB per file)
+- Task history showing all changes
+
+Dashboard:
+- Display all tasks in list and board view
+- Filter tasks by status (To Do, In Progress, Done)
+- Filter by priority and assignee
+- Search tasks by title or description
+- Sort by due date, priority, or creation date
+- Show task count by status
+
+Notifications:
+- Email notification when task is assigned
+- Email reminder 24 hours before due date
+- In-app notification badge for new assignments
+- Daily digest email of pending tasks
+
+NON-FUNCTIONAL REQUIREMENTS:
+
+Performance:
+- Page load time under 2 seconds
+- Support 50 concurrent users
+- Task list should load within 1 second
+- Search results within 500ms
+
+Security:
+- HTTPS for all communications
+- Password hashing with bcrypt
+- Session timeout after 30 minutes of inactivity
+- SQL injection prevention
+- XSS attack prevention
+
+Usability:
+- Mobile-responsive design
+- Intuitive interface requiring no training
+- Keyboard shortcuts for common actions
+- Accessible to screen readers
+
+Reliability:
+- 99% uptime
+- Daily automated backups
+- Data recovery within 4 hours
+
+CONSTRAINTS:
+- Budget: $50,000
+- Timeline: Must launch by April 20, 2025
+- Technology: Must use existing company infrastructure (AWS)
+- Team: 2 developers, 1 designer
+
+ASSUMPTIONS:
+- Users have modern web browsers
+- Users have stable internet connection
+- Email service will be reliable for notifications
+
+RISKS:
+- Timeline is aggressive for feature scope (High Impact, Medium Likelihood)
+- Integration with existing authentication system may be complex (Medium Impact, Low Likelihood)
+
+OUT OF SCOPE:
+- Mobile native apps
+- Time tracking functionality
+- Gantt charts
+- Resource allocation
+- Budget tracking
+- Integration with other tools (Slack, Jira)
+
+SUCCESS METRICS:
+- 90% user adoption within first month
+- Average task completion time reduced by 25%
+- User satisfaction score above 4/5
+- Zero critical bugs in production
+
+TIMELINE:
+Week 1-2: Design and planning
+Week 3-6: Development
+Week 7: Testing
+Week 8: Launch and training
