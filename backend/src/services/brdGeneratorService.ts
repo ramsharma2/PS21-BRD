@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 import {
     BRD_SYSTEM_PROMPT,
     createExecutiveSummaryPrompt,
-    createFunctionalRequirementsPrompt,
 } from '../utils/prompts';
 import { extractionService } from './extractionService';
 import { shouldGenerateSection } from '../utils/brdTemplates';
@@ -346,18 +345,35 @@ Respond with JSON:
             ...(extractions.nonfunctional_req || []),
         ];
 
-        // Use mock data if no requirements or API fails
+        // Always provide meaningful default scope
+        const defaultScope = {
+            inScope: [
+                'Core system functionality as defined in functional requirements',
+                'User authentication and authorization',
+                'Data management and storage',
+                'Basic reporting and analytics',
+                'System administration features'
+            ],
+            outOfScope: [
+                'Mobile native applications (future phase)',
+                'Third-party system integrations (unless specified)',
+                'Advanced AI/ML features',
+                'Custom hardware requirements',
+                'Legacy system migration'
+            ],
+        };
+
+        // If no requirements, use default scope
         if (requirements.length === 0) {
-            console.log('[BRD Generator] Using mock data for Scope (no extractions)');
-            return {
-                inScope: ['User authentication and authorization', 'Data management dashboard', 'Reporting module'],
-                outOfScope: ['Mobile application', 'Third-party integrations', 'Advanced analytics'],
-            };
+            console.log('[BRD Generator] Using default scope (no extractions)');
+            return defaultScope;
         }
 
         try {
-            const prompt = `Based on these requirements, define what is in-scope and out-of-scope:
+            const prompt = `Based on these requirements, define what is in-scope and out-of-scope for this project.
+Be specific and practical. Include at least 3-5 items for each category.
 
+Requirements:
 ${JSON.stringify(requirements.slice(0, 20), null, 2)}
 
 Respond with JSON:
@@ -376,17 +392,18 @@ Respond with JSON:
 
             const jsonMatch = response.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                return JSON.parse(jsonMatch[0]);
+                const parsed = JSON.parse(jsonMatch[0]);
+                // Ensure we have at least some items
+                if (parsed.inScope?.length > 0 && parsed.outOfScope?.length > 0) {
+                    return parsed;
+                }
             }
         } catch (error) {
-            console.error('[BRD Generator] API call failed for Scope, using mock data');
+            console.error('[BRD Generator] API call failed for Scope, using default scope');
         }
 
-        // Fallback to mock data
-        return {
-            inScope: ['User authentication and authorization', 'Data management dashboard', 'Reporting module'],
-            outOfScope: ['Mobile application', 'Third-party integrations', 'Advanced analytics'],
-        };
+        // Fallback to default scope
+        return defaultScope;
     }
 
     /**
@@ -411,17 +428,23 @@ Respond with JSON:
             };
         }
 
-        // Map extractions to requirements with proper extraction IDs
+        // Map extractions to requirements with proper extraction IDs for citations
         const requirements = functionalReqs.map((req, index) => {
+            // Ensure we have the extraction ID for citations
+            const extractionId = req.id || `extraction-${req.sourceId}-${index}`;
+            
+            console.log(`[BRD Generator] Mapping FR ${index + 1}: extractionId=${extractionId}, content=${req.content?.substring(0, 50)}`);
+            
             return {
-                id: req.id || `FR-${String(index + 1).padStart(3, '0')}`,
+                id: `FR-${String(index + 1).padStart(3, '0')}`,
                 description: req.content || req.description || '',
                 priority: req.priority || 'should_have',
                 acceptanceCriteria: req.acceptanceCriteria || ['To be defined'],
-                citations: req.id ? [req.id] : [], // Store actual extraction ID
+                citations: [extractionId], // Always include extraction ID for traceability
             };
         });
 
+        console.log(`[BRD Generator] Generated ${requirements.length} functional requirements with citations`);
         return { requirements };
     }
 
@@ -434,14 +457,22 @@ Respond with JSON:
             if (nfrs.length === 0) {
                 console.log('[BRD Generator] Using mock data for Non-Functional Requirements (no extractions)');
                 return {
-                    performance: ['System must support 1000 concurrent users', 'Page load time under 2 seconds'],
-                    security: ['All data must be encrypted at rest and in transit', 'Role-based access control'],
-                    scalability: ['System must scale horizontally'],
-                    reliability: ['99.9% uptime SLA'],
+                    performance: [
+                        { id: 'NFR-P-001', description: 'System must support 1000 concurrent users', priority: 'Must Have', citations: [] }
+                    ],
+                    security: [
+                        { id: 'NFR-S-001', description: 'All data must be encrypted at rest and in transit', priority: 'Must Have', citations: [] }
+                    ],
+                    scalability: [
+                        { id: 'NFR-SC-001', description: 'System must scale horizontally', priority: 'Should Have', citations: [] }
+                    ],
+                    reliability: [
+                        { id: 'NFR-R-001', description: '99.9% uptime SLA', priority: 'Must Have', citations: [] }
+                    ],
                 };
             }
 
-            // Categorize NFRs by type - return as structured objects
+            // Categorize NFRs by type - return as structured objects with citations
             const categorized = {
                 performance: [] as any[],
                 security: [] as any[],
@@ -449,14 +480,19 @@ Respond with JSON:
                 reliability: [] as any[],
             };
 
-            nfrs.forEach((nfr) => {
+            nfrs.forEach((nfr, index) => {
                 const content = (nfr.content || nfr.description || '').toLowerCase();
+                
+                // Ensure we have the extraction ID for citations
+                const extractionId = nfr.id || `extraction-${nfr.sourceId}-${index}`;
+                
+                console.log(`[BRD Generator] Mapping NFR ${index + 1}: extractionId=${extractionId}, content=${content.substring(0, 50)}`);
 
                 const requirement = {
-                    id: nfr.id || `NFR-${Math.random().toString(36).substring(2, 9)}`,
+                    id: `NFR-${String(index + 1).padStart(3, '0')}`,
                     description: nfr.content || nfr.description || '',
                     priority: nfr.priority || 'Must Have',
-                    citations: nfr.id ? [nfr.id] : [] // Store actual extraction ID
+                    citations: [extractionId] // Always include extraction ID for traceability
                 };
 
                 if (content.includes('performance') || content.includes('response time') || content.includes('speed') || content.includes('concurrent')) {
@@ -472,6 +508,7 @@ Respond with JSON:
                 }
             });
 
+            console.log(`[BRD Generator] Generated NFRs with citations: P=${categorized.performance.length}, S=${categorized.security.length}, SC=${categorized.scalability.length}, R=${categorized.reliability.length}`);
             return categorized;
         }
 
@@ -486,8 +523,8 @@ Respond with JSON:
         return { assumptions: assumptions.map((a) => a.content) };
     }
 
-    private async generateConstraints(extractions: Record<string, any[]>): Promise<any> {
-        const constraints = extractions.constraint || [];
+    private async generateConstraints(_extractions: Record<string, any[]>): Promise<any> {
+        const constraints = _extractions.constraint || [];
         if (constraints.length === 0) {
             return { 
                 budget: ['Project budget: $100,000'], 
@@ -535,7 +572,7 @@ Respond with JSON:
         return { milestones: timelines.map((t) => ({ phase: 'Phase 1', date: t.content })) };
     }
 
-    private async generateGlossary(extractions: Record<string, any[]>): Promise<any> {
+    private async generateGlossary(_extractions: Record<string, any[]>): Promise<any> {
         return { 
             terms: [
                 { term: 'BRD', definition: 'Business Requirements Document' },
