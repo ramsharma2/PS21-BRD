@@ -483,8 +483,6 @@ export default function BRDSections({ brd }: BRDSectionsProps) {
                                                                     })}
                                                                 </span>
                                                             )}
-                                                                </span>
-                                                            )}
                                                         </>
                                                     ) : (
                                                         renderValue(item)
